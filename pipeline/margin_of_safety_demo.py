@@ -5,6 +5,8 @@ All companies and numbers below are FICTIONAL example data.
 """
 from dataclasses import dataclass
 
+import markets
+
 
 @dataclass(frozen=True)
 class Company:
@@ -14,7 +16,7 @@ class Company:
     last_q_profit: float   # most recent quarter net profit
     ttm_profit: float      # trailing-twelve-month net profit
     ocf_ttm: float         # trailing operating cash flow
-    market: str = "cn_a"   # cn_a / hk / us (Code schema enum) 只影响默认PE区间和货币标签
+    market: str = "cn_a"   # markets/ 里的市场代码；决定PE示例区间和货币
 
 
 def normal_profit(c: Company, haircut: float = 0.5) -> float:
@@ -24,19 +26,27 @@ def normal_profit(c: Company, haircut: float = 0.5) -> float:
     return min(c.ttm_profit, c.last_q_profit * 4 * haircut)
 
 
-# 示例参数，不是结论：不同市场的“合理PE”区间。可按自己的判断覆盖。
-MARKETS = {
-    "cn_a": {"currency": "CNY", "pe": (15, 18)},
-    "hk": {"currency": "HKD", "pe": (10, 13)},
-    "us": {"currency": "USD", "pe": (15, 20)},
+# 市场本身的信息（货币、是否有现金流）只从仓库的 markets/ 读，这里不另存一份。
+# 这里只放估值方法自己的示例参数：各市场的“合理PE”区间。不是结论，可按自己的判断覆盖。
+PE_BANDS = {
+    "cn_a": (15, 18),
+    "hk": (10, 13),
+    "us": (15, 20),
+    "demo": (15, 18),
 }
 
 
 def _market(c: Company) -> dict:
-    """未登记的市场直接报错，不悄悄套用A股参数。无现金流资产(crypto/futures/fx)不该进估值。"""
-    if c.market not in MARKETS:
-        raise ValueError(f"市场 {c.market!r} 没有估值参数；无现金流资产请勿调用本模块")
-    return MARKETS[c.market]
+    """市场必须在 markets/ 里、必须有现金流、必须有PE示例区间，否则直接报错，不悄悄回落。"""
+    try:
+        cfg = markets.load(c.market)
+    except markets.UnknownMarketError:
+        raise ValueError(f"未知市场 {c.market!r}，可选：{', '.join(markets.available())}") from None
+    if not cfg.get("has_cashflow"):
+        raise ValueError(f"市场 {c.market!r} 的资产没有现金流，安全边际估值不适用")
+    if c.market not in PE_BANDS:
+        raise ValueError(f"市场 {c.market!r} 还没有PE示例区间，请在 PE_BANDS 里补上或显式传 pe_low/pe_high")
+    return {"currency": cfg["currency"], "pe": PE_BANDS[c.market]}
 
 
 def fair_value_band(c: Company, pe_low: float | None = None, pe_high: float | None = None,

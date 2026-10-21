@@ -76,3 +76,21 @@ def test_zero_shares_and_zero_price_rejected():
         verdict(Company("x", 10, 0, last_q_profit=10, ttm_profit=35, ocf_ttm=30))
     with pytest.raises(ValueError):
         verdict(Company("x", 0, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30))
+
+
+def test_pe_bands_only_for_known_cashflow_markets():
+    import markets
+    from pipeline.margin_of_safety_demo import PE_BANDS
+    for m in PE_BANDS:
+        assert m in markets.available() and markets.load(m)["has_cashflow"] is True
+
+
+def test_no_cashflow_market_rejected():
+    for m in ("crypto", "futures", "fx"):
+        with pytest.raises(ValueError):
+            verdict(Company("x", 10, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30, market=m))
+
+
+def test_demo_market_runs():
+    r = verdict(Company("x", 25, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30, market="demo"))
+    assert r["call"] == "margin of safety"
