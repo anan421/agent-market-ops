@@ -152,7 +152,7 @@ def test_cli_report_wording(capsys):
         rd.main(["--market", "rates"])
 
 
-# ---- 梁文峰复审的反例：每条都能让论点躲掉证伪 ----
+# ---- 复审反例：每条都能让论点躲掉证伪 ----
 DT = dt.date
 
 
