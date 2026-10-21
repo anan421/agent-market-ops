@@ -1,5 +1,6 @@
-import numpy as np
 import pytest
+
+np = pytest.importorskip("numpy")
 
 from pipeline import dsr_demo as d
 
