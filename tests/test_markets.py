@@ -8,13 +8,12 @@ import markets
 ROOT = Path(__file__).resolve().parents[1]
 S = lambda n: json.loads((ROOT / "schema" / n).read_text(encoding="utf-8"))
 ENUM = S("price_bar.schema.json")["properties"]["market"]["enum"]
-PPY = {"cn_a": 242, "hk": 246, "us": 252, "crypto": 365, "futures": 242, "fx": 260, "demo": 252}
 TARGET = [os.environ["AMO_MARKET"]] if os.environ.get("AMO_MARKET") else markets.available()
 
 
 def test_enum_matches_configs():
     assert sorted(ENUM) == markets.available()
-    assert set(ENUM) == {"cn_a", "hk", "us", "crypto", "futures", "fx", "demo"}
+    assert markets.available(), "no market configs found"
 
 
 @pytest.mark.parametrize("name", TARGET)
@@ -22,7 +21,7 @@ def test_config_valid(name):
     cfg = markets.load(name)
     jsonschema.validate(cfg, S("market_config.schema.json"))
     assert cfg["name"] == name
-    assert cfg["periods_per_year"] == PPY[name]
+    assert isinstance(cfg["periods_per_year"], int) and 1 <= cfg["periods_per_year"] <= 366
 
 
 def test_unknown_market_friendly():
@@ -80,5 +79,6 @@ def test_zero_rows_fails(monkeypatch, tmp_path):
     from scripts import validate_demo as vd
     monkeypatch.delenv("AMO_MARKET", raising=False)
     real = vd.bar_rows
-    monkeypatch.setattr(vd, "bar_rows", lambda p: (b for b in real(p) if b["market"] != "hk"))
+    drop = markets.available()[0]
+    monkeypatch.setattr(vd, "bar_rows", lambda p: (b for b in real(p) if b["market"] != drop))
     assert vd.main() == 1

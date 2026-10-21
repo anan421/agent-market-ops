@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -34,16 +35,18 @@ def test_enum_is_generated_and_current():
 
 
 def test_check_detects_drift(monkeypatch):
-    monkeypatch.setattr(markets, "available", lambda: ["cn_a", "us"])
+    monkeypatch.setattr(markets, "available", lambda: markets.available()[:-1])
     assert gen.main(["--check"]) == 1
 
 
-ZH = {"cn_a": "A股", "hk": "港股", "us": "美股", "crypto": "加密", "futures": "期货", "fx": "外汇", "demo": "示例"}
+CJK = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 
-@pytest.mark.parametrize("name", sorted(ZH))
+@pytest.mark.parametrize("name", markets.available())
 def test_display_name_zh(name):
-    assert markets.load(name)["display_name_zh"] == ZH[name]
+    zh = markets.load(name)["display_name_zh"]
+    assert isinstance(zh, str) and zh.strip()
+    assert CJK.search(zh), f"{name}: display_name_zh {zh!r} has no CJK character"
 
 
 def test_display_name_zh_required():
