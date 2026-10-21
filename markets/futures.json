@@ -1,0 +1,16 @@
+{
+  "name": "futures",
+  "asset_class": "commodity",
+  "currency": "CNY",
+  "tz": "Asia/Shanghai",
+  "trading_hours": "09:00-11:30,13:30-15:00,21:00-23:00",
+  "calendar_note": "Exchange calendar incl. night session; demo only",
+  "price_limit_pct": 5.0,
+  "settlement": "T+0",
+  "fee_bps": 0.5,
+  "lot_size": 1,
+  "has_cashflow": false,
+  "periods_per_year": 242,
+  "synthetic": true,
+  "example_values": true
+}
