@@ -12,22 +12,22 @@ def test_sr0_increases_with_n():
 
 def test_floor_applied():
     assert d.sr0_annual(50, 0.01) == d.sr0_annual(50, d.V_FLOOR)
-    trials = [{"ppy": 252, "n": 500, "sr_annual": 0.1 + 0.01 * i} for i in range(5)]
+    trials = [{"ppy": d.ppy_for("demo"), "n": 500, "sr_annual": 0.1 + 0.01 * i} for i in range(5)]
     assert d.estimate_variance(trials) == d.V_FLOOR
 
 
 def test_event_and_small_trials_excluded_from_v():
-    base = [{"ppy": 252, "n": 500, "sr_annual": s} for s in (-1.0, 0.0, 1.0, 2.0)]
+    base = [{"ppy": d.ppy_for("demo"), "n": 500, "sr_annual": s} for s in (-1.0, 0.0, 1.0, 2.0)]
     v0 = d.estimate_variance(base)
     extra = base + [{"kind": "event", "n": 40, "sr_annual": 50.0},
-                    {"ppy": 252, "n": 10, "sr_annual": -50.0}]
+                    {"ppy": d.ppy_for("demo"), "n": 10, "sr_annual": -50.0}]
     assert d.estimate_variance(extra) == v0
 
 
 def test_dsr_in_unit_interval():
     rng = np.random.default_rng(0)
     for mu in (-0.01, 0.0, 0.002, 0.05):
-        x = d.deflated_sharpe(rng.normal(mu, 0.01, 300), 252, 1.0)
+        x = d.deflated_sharpe(rng.normal(mu, 0.01, 300), d.ppy_for("demo"), 1.0)
         assert 0.0 <= x <= 1.0
 
 
@@ -50,13 +50,17 @@ def test_luck_generator_naive_best_looks_good_but_dsr_fails():
     assert out["best_dsr_at"][1] >= d.DSR_MIN > out["best_dsr_at"][100]
 
 
-def test_ppy_defaults_and_unknown_market():
-    import pytest
-    assert d.ppy_for("cn_a") == 242 and d.ppy_for("hk") == 246
-    assert d.ppy_for("us") == 252 and d.ppy_for("crypto") == 365
-    assert d.ppy_for("futures") == 242 and d.ppy_for("fx") == 260
-    assert d.ppy_for("demo") == 252
-    for bad in ("CN_A", "nasdaq", ""):
+def test_ppy_read_from_markets_config():
+    import markets
+    names = markets.available()
+    assert names, "markets/ 下应至少有一个市场配置"
+    for m in names:
+        assert d.ppy_for(m) == markets.load(m)["periods_per_year"]
+        assert d.ppy_for(m) > 1
+    ppy = {m: d.ppy_for(m) for m in names}
+    if {"crypto", "cn_a"} <= set(ppy):
+        assert ppy["crypto"] > ppy["cn_a"]   # 加密 7x24 交易日多于 A 股
+    for bad in ("CN_A", "nasdaq", "", "../demo"):
         with pytest.raises(ValueError, match="未知市场"):
             d.ppy_for(bad)
 
@@ -75,8 +79,8 @@ def test_mixed_ppy_raises():
     same = [{"market": "cn_a", "n": 500, "sr_annual": 1.0}]
     r = np.random.default_rng(1).normal(0, 0.01, 300)
     with pytest.raises(ValueError, match="混用了不同的每年期数"):
-        d.deflated_sharpe(r, 365, 1.0, same)  # 用 crypto 口径去年化 cn_a 试验
-    assert 0 <= d.deflated_sharpe(r, 242, 1.0, same) <= 1
+        d.deflated_sharpe(r, d.ppy_for("crypto"), 1.0, same)  # 用 crypto 口径去年化 cn_a 试验
+    assert 0 <= d.deflated_sharpe(r, d.ppy_for("cn_a"), 1.0, same) <= 1
 
 
 def test_ppy1_backdoor_repro_raises():
@@ -103,7 +107,7 @@ def test_periodic_cannot_be_reclassified_via_ppy():
         d.trial_ppy({"ppy": 1, "n": 500, "sr_annual": 1.0})
     with pytest.raises(ValueError, match="未知试验类型"):
         d.trial_ppy({"kind": "evnt", "market": "cn_a", "n": 500, "sr_annual": 1.0})
-    assert d.trial_ppy({"market": "cn_a", "ppy": 242, "n": 500, "sr_annual": 1.0}) == 242
+    assert d.trial_ppy({"market": "cn_a", "ppy": d.ppy_for("cn_a"), "n": 500, "sr_annual": 1.0}) == d.ppy_for("cn_a")
 
 
 def test_cost_applied_consistently_to_trials_v_sr0():

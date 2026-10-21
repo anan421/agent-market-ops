@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import functools
 import math
 from typing import Iterable, Mapping
 
@@ -34,19 +35,19 @@ V_FLOOR = 0.25
 DSR_MIN = 0.95
 MIN_N_OBS = 30
 
-# 每年期数默认值（periods per year）。最终应从 markets/ 配置的 `periods_per_year` 字段读取。
-PPY_DEFAULTS = {
-    "cn_a": 242, "hk": 246, "us": 252, "crypto": 365,
-    "futures": 242, "fx": 260, "demo": 252,
-}
-
-
+@functools.lru_cache(maxsize=None)
 def ppy_for(market: str) -> int:
-    """按市场枚举（小写）返回默认 ppy；未知市场抛出中文错误。"""
-    if market not in PPY_DEFAULTS:
+    """从 markets/ 配置读取该市场的 `periods_per_year`；未知市场抛出中文错误。"""
+    import markets  # 市场列表与参数只在 markets/ 维护，这里不复制
+    try:
+        cfg = markets.load(market)
+    except markets.UnknownMarketError:
         raise ValueError(
-            f"未知市场: {market!r}。可用值: {', '.join(PPY_DEFAULTS)}（须小写）")
-    return PPY_DEFAULTS[market]
+            f"未知市场: {market!r}。可用值: {', '.join(markets.available())}（须小写）") from None
+    p = cfg.get("periods_per_year")
+    if not isinstance(p, int) or isinstance(p, bool) or p <= 1:
+        raise ValueError(f"市场 {market!r} 的配置缺少合法的 periods_per_year（得到 {p!r}）")
+    return p
 
 
 def sr0_annual(n_trials: int, variance: float) -> float:
@@ -114,7 +115,7 @@ def check_same_ppy(trials: Iterable[Mapping], ppy: int | None = None) -> int | N
         ps.add(ppy)
     if len(ps) > 1:
         raise ValueError(
-            f"同一组试验混用了不同的每年期数 ppy={sorted(ps)}（例如 crypto 365 与 cn_a 242）。"
+            f"同一组试验混用了不同的每年期数 ppy={sorted(ps)}（例如 crypto 与 cn_a 混在一组）。"
             "年化口径不一致，方差与 DSR 不可比，请按市场分组分别计算。")
     return ps.pop() if ps else None
 
