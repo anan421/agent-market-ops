@@ -1,0 +1,13 @@
+{
+  "_notice": "示例数据，不构成建议。全部帖子、作者与标的均为虚构。",
+  "keywords": {"DEMO-X": ["rocket", "launch", "orbit"], "DEMO-Y": ["battery", "charging", "factory"]},
+  "posts": [
+    {"id": "p1", "author": "demo_user_1", "type": "original", "text": "New rocket launch window confirmed for next week", "ts": "2026-01-05T10:00:00Z", "likes": 120},
+    {"id": "p2", "author": "demo_user_2", "type": "repost", "text": "New rocket launch window confirmed for next week", "ts": "2026-01-05T10:05:00Z", "likes": 30},
+    {"id": "p3", "author": "demo_user_1", "type": "quote", "text": "Battery factory output doubled this quarter, per the demo report", "ts": "2026-01-05T11:00:00Z", "likes": 80},
+    {"id": "p4", "author": "demo_user_3", "type": "reply", "text": "🔥🔥", "ts": "2026-01-05T11:10:00Z", "likes": 5},
+    {"id": "p5", "author": "demo_user_2", "type": "quote", "text": "wow", "ts": "2026-01-05T12:00:00Z", "likes": 9},
+    {"id": "p6", "author": "demo_user_3", "type": "original", "text": "Charging network expands to orbit-themed demo city", "ts": "2026-01-05T13:00:00Z", "likes": 40},
+    {"id": "p7", "author": "demo_user_4", "type": "original", "text": "Weather looks nice today in the sample town", "ts": "2026-01-05T14:00:00Z", "likes": 15}
+  ]
+}
