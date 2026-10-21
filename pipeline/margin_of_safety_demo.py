@@ -63,7 +63,7 @@ def fair_value_band(c: Company, pe_low: float | None = None, pe_high: float | No
     return eps * pe_low, eps * pe_high
 
 
-MAX_SWING = 2.0  # 年化季度利润与 TTM 之比超过 2 倍（任一方向）就算看不懂
+MAX_SWING = 2.0  # 年化季度利润与 TTM 之比严格大于 2 倍（任一方向）才进太难筐；正好 2 倍仍估值
 
 
 def too_hard(c: Company) -> bool:
@@ -82,6 +82,8 @@ def cash_quality(c: Company) -> float:
 def verdict(c: Company, **kw) -> dict:
     if c.price <= 0:
         raise ValueError("价格 price 必须大于 0")
+    if c.shares <= 0:
+        raise ValueError("股本 shares 必须大于 0")
     m = _market(c)
     base = {"name": c.name, "market": c.market, "currency": m["currency"]}
     if too_hard(c):  # 进筐就不给估值区间，也不给倍数
