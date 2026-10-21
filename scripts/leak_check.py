@@ -11,12 +11,11 @@ SECRET_PATTERNS = {
     "slack_token": re.compile(r"xox[abprs]-[A-Za-z0-9-]{10,}"),
     "private_key": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
 }
-ASHARE = re.compile(r"(?<![0-9A-Za-z])(?:00[0-3]|30[01]|60[0135]|68[89])[0-9]{3}(?![0-9])")
+ASHARE = re.compile(r"(?<![0-9A-Za-z])(?:SH|SZ|sh|sz)?(?:00[0-3]|30[01]|60[0135]|68[89])[0-9]{3}(?![0-9])")
 DATA_EXT = {".csv", ".json", ".jsonl", ".parquet", ".tsv"}
 CODE_ALLOWLIST: set[str] = set()   # explicitly allowed codes (none by default)
 FORBIDDEN_DIRS = ("quant/", "briefs/", "pnl_ledger")
 SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules"}
-SELF = {"scripts/leak_check.py", "tests/test_leak_check.py"}
 
 def scan_text(rel: str, text: str) -> list[str]:
     out = []
@@ -24,7 +23,7 @@ def scan_text(rel: str, text: str) -> list[str]:
         if pat.search(text): out.append(f"{rel}: {name}")
     if Path(rel).suffix.lower() in DATA_EXT:
         for m in ASHARE.finditer(text):
-            if m.group(0) not in CODE_ALLOWLIST:
+            if m.group(0)[-6:] not in CODE_ALLOWLIST:
                 out.append(f"{rel}: A-share-like code {m.group(0)}"); break
     return out
 
@@ -43,9 +42,11 @@ def scan(root: Path) -> list[str]:
         if not p.is_file() or any(part in SKIP_DIRS for part in p.relative_to(root).parts): continue
         rel = p.relative_to(root).as_posix()
         out += scan_path(rel)
-        if rel in SELF: continue
         try: text = p.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError): continue
+        except (UnicodeDecodeError, OSError):
+            if p.suffix.lower() in DATA_EXT:
+                out.append(f"{rel}: undecodable data file (cannot scan; fail closed)")
+            continue
         out += scan_text(rel, text)
     return out
 

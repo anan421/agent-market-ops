@@ -31,3 +31,16 @@ def test_paths():
 def test_scan_tmp(tmp_path):
     (tmp_path / ".env").write_text("A=1")
     assert lc.main([str(tmp_path)]) == 1
+
+def test_exchange_prefixed_codes():
+    for pre in ("SH", "SZ", "sz"):
+        assert lc.scan_text("a.csv", pre + "60" + "0519")
+
+def test_binary_data_file_fails_closed(tmp_path):
+    (tmp_path / "x.parquet").write_bytes(b"\xff\xfe\x00binary")
+    assert lc.main([str(tmp_path)]) == 1
+
+def test_self_files_are_scanned(tmp_path):
+    d = tmp_path / "scripts"; d.mkdir()
+    (d / "leak_check.py").write_text("k = '" + FAKE["ghp"] + "'")
+    assert lc.main([str(tmp_path)]) == 1
