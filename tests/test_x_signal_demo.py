@@ -28,7 +28,7 @@ def test_low_effort_filtered():
     assert m.is_low_effort("🔥🔥🔥")
     assert m.is_low_effort("wow")
     assert not m.is_first_hand({"type": "quote", "text": "wow!!"})
-    assert m.is_first_hand({"type": "quote", "text": "quote with substantive new content"})
+    assert m.is_first_hand({"type": "quote", "text": "quote with substantive new content", "is_primary_source": True})
 
 
 def test_map_tickers(demo):
@@ -43,7 +43,7 @@ def test_summary_on_demo(demo):
     s = m.summarize(demo["posts"], demo["keywords"])
     assert (s["DEMO-X"]["first_hand_posts"], s["DEMO-X"]["engagement"]) == (2, 160)
     assert (s["DEMO-Y"]["first_hand_posts"], s["DEMO-Y"]["engagement"]) == (2, 120)
-    assert s["DEMO-X"]["total_posts"] == 4 and s["DEMO-Y"]["total_posts"] == 6
+    assert s["DEMO-X"]["total_posts"] == 4 and s["DEMO-Y"]["total_posts"] == 7
 
 
 def test_missing_notice_rejected(tmp_path):
@@ -55,7 +55,7 @@ def test_missing_notice_rejected(tmp_path):
 
 def test_bad_type_rejected(tmp_path):
     f = tmp_path / "bad.json"
-    post = {"id": "x", "author": "demo_user_9", "type": "like", "text": "t", "ts": "t", "likes": 0}
+    post = {"id": "x", "author": "demo_user_9", "type": "like", "text": "t", "ts": "t", "likes": 0, "is_primary_source": True}
     f.write_text(json.dumps({"_notice": m.NOTICE, "keywords": {}, "posts": [post]}), encoding="utf-8")
     with pytest.raises(ValueError):
         m.load_demo(f)
@@ -64,13 +64,12 @@ def test_bad_type_rejected(tmp_path):
 def test_only_demo_authors_and_tickers(demo):
     assert all(p["author"].startswith("demo_user_") for p in demo["posts"])
     assert all(t.startswith("DEMO-") for t in demo["keywords"])
-    assert all(p["author"].startswith("demo_user_") for p in demo["posts"])
 
 
 def test_snr_values(demo):
     s = m.summarize(demo["posts"], demo["keywords"])
     assert s["DEMO-X"]["snr"] == pytest.approx(2 / 4, abs=1e-3)
-    assert s["DEMO-Y"]["snr"] == pytest.approx(2 / 6, abs=1e-3)
+    assert s["DEMO-Y"]["snr"] == pytest.approx(2 / 7, abs=1e-3)
 
 
 def test_consensus_noise_flag(demo):
@@ -101,7 +100,7 @@ def test_empty_ticker_safe():
 def test_render_chinese(demo):
     out = m.render(m.summarize(demo["posts"], demo["keywords"]))
     assert m.NOTICE in out
-    assert "信号：DEMO-X[美股]，2 条一手。噪声：2 条，扔了。" in out
+    assert "信号：DEMO-X[美股]，2 条一手。路人原创：0 条，不算一手。噪声：2 条，扔了。" in out
     assert "共识噪声" in out.split("DEMO-Y")[1]
 
 
@@ -110,7 +109,7 @@ def test_chinese_short_post_rules():
     assert m.is_low_effort("火箭🚀")
     assert not m.is_low_effort("利好利好") and m.text_weight("利好利好") == 12
     assert not m.is_low_effort("电池工厂产量翻倍")
-    assert m.is_first_hand({"type": "original", "text": "示例项目链上活跃地址翻倍"})
+    assert m.is_first_hand({"type": "original", "text": "示例项目链上活跃地址翻倍", "is_primary_source": True})
 
 
 def test_mixed_language_weight():
@@ -156,3 +155,43 @@ def test_cli_rejects_chinese_market_name():
         m.main(["--market", "加密"])
     with pytest.raises(SystemExit):
         m.main(["--market", "US"])
+
+
+def test_primary_source_required(tmp_path):
+    f = tmp_path / "bad.json"
+    post = {"id": "x", "author": "demo_user_9", "type": "original", "text": "t", "ts": "t", "likes": 0}
+    f.write_text(json.dumps({"_notice": m.NOTICE, "keywords": {}, "posts": [post]}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        m.load_demo(f)
+    post["is_primary_source"] = "yes"
+    f.write_text(json.dumps({"_notice": m.NOTICE, "keywords": {}, "posts": [post]}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        m.load_demo(f)
+
+
+def test_bystander_original_not_first_hand():
+    post = {"type": "original", "text": "a long thoughtful bystander analysis post", "is_primary_source": False}
+    assert not m.is_first_hand(post)
+    assert m.is_bystander_original(post)
+    post["is_primary_source"] = True
+    assert m.is_first_hand(post) and not m.is_bystander_original(post)
+
+
+def test_bystander_counted_separately(demo):
+    s = m.summarize(demo["posts"], demo["keywords"])
+    assert s["DEMO-Y"]["bystander_original"] == 1
+    assert s["DEMO-Y"]["first_hand_posts"] == 2
+    out = m.render(s)
+    assert "信号：DEMO-Y[A股]，2 条一手。路人原创：1 条，不算一手。噪声：4 条，扔了。" in out
+
+
+def test_word_boundary_english():
+    kw = {"DEMO-X": {"market": "us", "words": ["rocket"]}}
+    assert m.map_tickers("rocketry club meeting", kw) == []
+    assert m.map_tickers("the rocket flew", kw) == ["DEMO-X"]
+    assert m.map_tickers("Rocket!", kw) == ["DEMO-X"]
+
+
+def test_chinese_substring_kept():
+    kw = {"DEMO-Y": {"market": "cn_a", "words": ["电池"]}}
+    assert m.map_tickers("固态电池产线", kw) == ["DEMO-Y"]

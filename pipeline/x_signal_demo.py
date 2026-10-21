@@ -12,7 +12,8 @@ from pathlib import Path
 NOTICE = "示例数据，不构成建议"
 DEFAULT_MIN_CHARS = 10
 VALID_TYPES = {"original", "reply", "quote", "repost"}
-REQUIRED = ("id", "author", "type", "text", "ts", "likes")
+REQUIRED = ("id", "author", "type", "text", "ts", "likes", "is_primary_source")
+# TODO: #5 合并后改成从 markets/ 读取。
 MARKETS = ("cn_a", "hk", "us", "crypto", "futures", "fx", "demo")
 MARKET_NAMES = {"cn_a": "A股", "hk": "港股", "us": "美股", "crypto": "加密",
                 "futures": "期货", "fx": "外汇", "demo": "演示"}
@@ -29,6 +30,8 @@ def load_demo(path):
         missing = [k for k in REQUIRED if k not in p]
         if missing:
             raise ValueError(f"post {p.get('id')} missing {missing}")
+        if not isinstance(p["is_primary_source"], bool):
+            raise ValueError(f"post {p['id']} is_primary_source must be bool")
         if p["type"] not in VALID_TYPES:
             raise ValueError(f"post {p['id']} bad type {p['type']}")
     for t, spec in data["keywords"].items():
@@ -50,11 +53,20 @@ def is_low_effort(text, min_chars=DEFAULT_MIN_CHARS):
     return text_weight(text) < min_chars
 
 
+def has_new_content(post, min_chars=DEFAULT_MIN_CHARS):
+    """原创，或带新内容的引用；且不是水贴。"""
+    return post["type"] in ("original", "quote") and not is_low_effort(post["text"], min_chars)
+
+
 def is_first_hand(post, min_chars=DEFAULT_MIN_CHARS):
-    """original / quote with real new content = first hand; repost/replies/low-effort = noise."""
-    if post["type"] not in ("original", "quote"):
-        return False
-    return not is_low_effort(post["text"], min_chars)
+    """一手 = 当事方本人说的：有新内容，且 is_primary_source 为 True。"""
+    return has_new_content(post, min_chars) and post.get("is_primary_source") is True
+
+
+def is_bystander_original(post, min_chars=DEFAULT_MIN_CHARS):
+    """路人原创：有新内容的原创帖，但作者不是当事方。不算一手。"""
+    return (post["type"] == "original" and has_new_content(post, min_chars)
+            and post.get("is_primary_source") is not True)
 
 
 def _words(spec):
@@ -73,9 +85,17 @@ def filter_market(keywords, market):
     return {t: v for t, v in keywords.items() if market_of(v) == market}
 
 
+def keyword_hit(keyword, text):
+    """英文关键词按词边界 \\b 匹配（rocketry 不命中 rocket）；含中文的关键词按子串匹配。"""
+    k = keyword.lower()
+    if _CJK.search(k):
+        return k in text
+    return re.search(r"\b" + re.escape(k) + r"\b", text) is not None
+
+
 def map_tickers(text, keywords):
     low = (text or "").lower()
-    return sorted(t for t, spec in keywords.items() if any(k.lower() in low for k in _words(spec)))
+    return sorted(t for t, spec in keywords.items() if any(keyword_hit(k, low) for k in _words(spec)))
 
 
 DEFAULT_SNR_THRESHOLD = 0.4
@@ -92,13 +112,16 @@ def summarize(posts, keywords, min_chars=DEFAULT_MIN_CHARS,
     """
     keywords = filter_market(keywords, market)
     out = {t: {"market": market_of(keywords[t]), "first_hand_posts": 0, "engagement": 0,
-               "total_posts": 0, "total_engagement": 0} for t in keywords}
+               "bystander_original": 0, "total_posts": 0, "total_engagement": 0} for t in keywords}
     for p in posts:
         fh = is_first_hand(p, min_chars)
+        by = is_bystander_original(p, min_chars)
         for t in map_tickers(p["text"], keywords):
             r = out[t]
             r["total_posts"] += 1
             r["total_engagement"] += int(p["likes"])
+            if by:
+                r["bystander_original"] += 1
             if fh:
                 r["first_hand_posts"] += 1
                 r["engagement"] += int(p["likes"])
@@ -115,9 +138,10 @@ def render(summary):
     if not summary:
         lines.append("这个市场没有示例标的。")
     for t, r in summary.items():
-        noise = r["total_posts"] - r["first_hand_posts"]
+        by = r.get("bystander_original", 0)
+        noise = r["total_posts"] - r["first_hand_posts"] - by
         tag = f"[{MARKET_NAMES.get(r['market'], r['market'])}]" if r.get("market") else ""
-        line = f"信号：{t}{tag}，{r['first_hand_posts']} 条一手。噪声：{noise} 条，扔了。信噪比 {r['snr']:.2f}。"
+        line = f"信号：{t}{tag}，{r['first_hand_posts']} 条一手。路人原创：{by} 条，不算一手。噪声：{noise} 条，扔了。信噪比 {r['snr']:.2f}。"
         if r["consensus_noise"]:
             line += f"互动 {r['total_engagement']}，热闹全是转的。共识噪声，别追。"
         lines.append(line)
