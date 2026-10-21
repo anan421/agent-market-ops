@@ -26,7 +26,7 @@ def test_config_valid(name):
 
 
 def test_unknown_market_friendly():
-    with pytest.raises(markets.UnknownMarketError, match="available: .*cn_a"):
+    with pytest.raises(markets.UnknownMarketError, match="未登记的市场：mars。可选：.*cn_a"):
         markets.load("mars")
 
 
