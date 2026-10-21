@@ -1,3 +1,7 @@
+> 巴菲特、索罗斯、马斯克、梁文峰均为 AI 角色名，与真人无关，未经其本人参与或背书，也不代表其本人观点。
+>
+> "巴菲特", "索罗斯", "马斯克" and "梁文峰" are names of AI personas only. They are not affiliated with, endorsed by, or representative of the views of any real person.
+
 # agent-market-ops
 
 [![ci](https://img.shields.io/badge/ci-pytest-brightgreen)](.github/workflows/ci.yml)
