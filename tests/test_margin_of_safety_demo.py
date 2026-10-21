@@ -49,3 +49,30 @@ def test_unknown_market_raises():
     c = Company("x", 1, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30, market="crypto")
     with pytest.raises(ValueError):
         verdict(c)
+
+
+def test_inverted_pe_band_rejected():
+    c = Company("x", 25, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30)
+    with pytest.raises(ValueError):
+        verdict(c, pe_low=30, pe_high=10)
+    with pytest.raises(ValueError):
+        verdict(c, pe_low=0, pe_high=10)
+
+
+def test_too_hard_catches_collapse_direction():
+    # 季度 4 年化 16，TTM 40：差 2.5 倍，利润在塌，不能判有安全边际
+    c = Company("x", 1, 10, last_q_profit=4, ttm_profit=40, ocf_ttm=40)
+    assert verdict(c)["call"] == "too hard pile"
+
+
+def test_too_hard_gives_no_band():
+    c = Company("x", 10, 10, last_q_profit=-5, ttm_profit=-20, ocf_ttm=0)
+    r = verdict(c)
+    assert r["call"] == "too hard pile" and r["band"] is None
+
+
+def test_zero_shares_and_zero_price_rejected():
+    with pytest.raises(ValueError):
+        verdict(Company("x", 10, 0, last_q_profit=10, ttm_profit=35, ocf_ttm=30))
+    with pytest.raises(ValueError):
+        verdict(Company("x", 0, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30))

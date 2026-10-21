@@ -45,8 +45,23 @@ def fair_value_band(c: Company, pe_low: float | None = None, pe_high: float | No
     d = _market(c)["pe"]
     pe_low = d[0] if pe_low is None else pe_low
     pe_high = d[1] if pe_high is None else pe_high
+    if not 0 < pe_low <= pe_high:
+        raise ValueError(f"PE 区间必须满足 0 < pe_low <= pe_high，收到 ({pe_low}, {pe_high})")
+    if c.shares <= 0:
+        raise ValueError("股本 shares 必须大于 0")
     eps = normal_profit(c, haircut) / c.shares
     return eps * pe_low, eps * pe_high
+
+
+MAX_SWING = 2.0  # 年化季度利润与 TTM 之比超过 2 倍（任一方向）就算看不懂
+
+
+def too_hard(c: Company) -> bool:
+    """亏损、零利润，或季度年化与 TTM 相差超过 MAX_SWING 倍（两个方向都拦）。"""
+    a, t = c.last_q_profit * 4, c.ttm_profit
+    if a <= 0 or t <= 0:
+        return True
+    return max(a, t) / min(a, t) > MAX_SWING
 
 
 def cash_quality(c: Company) -> float:
@@ -55,20 +70,24 @@ def cash_quality(c: Company) -> float:
 
 
 def verdict(c: Company, **kw) -> dict:
+    if c.price <= 0:
+        raise ValueError("价格 price 必须大于 0")
+    m = _market(c)
+    base = {"name": c.name, "market": c.market, "currency": m["currency"]}
+    if too_hard(c):  # 进筐就不给估值区间，也不给倍数
+        call = "too hard pile"
+        return {**base, "band": None, "premium_to_band_top": None, "cash_quality": None,
+                "call": call, "note": NOTES[call]}
     lo, hi = fair_value_band(c, **kw)
-    gap = c.price / hi - 1 if hi > 0 else float("nan")  # >0: price above band top
+    gap = c.price / hi - 1
     q = cash_quality(c)
-    swing = abs(c.last_q_profit * 4 - c.ttm_profit) / c.ttm_profit if c.ttm_profit > 0 else float("inf")
-    if c.ttm_profit <= 0 or swing > 1.0:
-        call = "too hard pile"  # 看不懂的放进“太难”筐，不估值
-    elif c.price <= lo and q >= 0.5:
+    if c.price <= lo and q >= 0.5:
         call = "margin of safety"
     elif c.price <= hi:
         call = "fair, no margin"
     else:
         call = "expensive"
-    return {"name": c.name, "market": c.market,
-            "currency": _market(c)["currency"], "band": (round(lo, 2), round(hi, 2)),
+    return {**base, "band": (round(lo, 2), round(hi, 2)),
             "premium_to_band_top": round(gap, 3), "cash_quality": round(q, 2),
             "call": call, "note": NOTES[call]}
 
@@ -89,5 +108,6 @@ EXAMPLE = [
 ]
 
 if __name__ == "__main__":
+    print("示例数据，不构成建议。")
     for c in EXAMPLE:
         print(verdict(c))
