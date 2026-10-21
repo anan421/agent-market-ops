@@ -2,11 +2,12 @@ import dataclasses
 import datetime as dt
 import sys
 
+import markets
 import pytest
 
 from pipeline import reflexivity_demo as rd
 
-MARKETS = ["cn_a", "hk", "us", "crypto", "futures", "fx", "demo"]
+MARKETS = markets.available()
 D = lambda i: rd.START + dt.timedelta(days=i)
 
 
@@ -116,9 +117,9 @@ def test_statuses_never_say_correct():
 
 
 @pytest.mark.parametrize("key", MARKETS)
-def test_all_markets_run(key, stub_markets):
+def test_all_markets_run(key):
     d = rd.main(["--market", key])
-    cfg = stub_markets.load(key)
+    cfg = markets.load(key)
     for name in d["meta"]:
         assert rd.series_meta(d, name) == {"market": key, "currency": cfg["currency"], "tz": cfg["tz"]}
 

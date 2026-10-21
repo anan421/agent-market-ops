@@ -4,8 +4,8 @@
 
 ## 30 秒上手 / 30-second quickstart
 
-需要 `markets/` 适配层（#5）。未合并前本地可用测试桩：`PYTHONPATH=tests/fixtures`（仅测试用，勿当正式包提交）。
-Requires the `markets/` adapter (#5); before it is merged, use the test-only stub via `PYTHONPATH=tests/fixtures`.
+需要仓库里的 `markets/` 适配层（#5），所有市场参数都从它读取。
+Requires the repo's `markets/` adapter (#5); all market values are read from it.
 
 ```bash
 python3 -m pipeline.reflexivity_demo --market us --seed 42
@@ -57,4 +57,4 @@ print(rd.evaluate(t, d))  # 'falsified' / 'not_falsified' / 'pending'，永远�
 - Lead-lag 报告写明试了多少个滞后、n、SE≈1/√n；未做多重比较校正，不算信号。
 - 背离检测只用 t 及之前的数据（有因果性测试）。
 
-Test: `python3 -m pytest -q tests`（`tests/conftest.py` 用 monkeypatch 注入 `tests/fixtures/markets` 测试桩）
+Test: `python3 -m pytest -q tests`（直接使用仓库的 `markets/` 包 / uses the real repo `markets/` package）
