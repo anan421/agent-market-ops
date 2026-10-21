@@ -11,7 +11,7 @@ def schema(name): return json.loads((ROOT / "schema" / name).read_text(encoding=
 def bar_rows(path):
     with path.open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
-            yield {"symbol": r["symbol"], "date": r["date"], **{k: float(r[k]) for k in ("open","high","low","close")},
+            yield {**{k: r[k] for k in ("symbol","market","currency","tz","date")}, **{k: float(r[k]) for k in ("open","high","low","close")},
                    "volume": int(r["volume"]), "synthetic": r["synthetic"].lower() == "true"}
 
 def check_bar(b):
