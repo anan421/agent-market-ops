@@ -30,8 +30,11 @@ Homepage = "https://github.com/anan421/agent-market-ops"
 Issues = "https://github.com/anan421/agent-market-ops/issues"
 
 [tool.setuptools.packages.find]
-include = ["pipeline*"]
+include = ["pipeline*", "markets*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.setuptools.package-data]
+markets = ["*.json"]
