@@ -35,7 +35,8 @@ def test_enum_is_generated_and_current():
 
 
 def test_check_detects_drift(monkeypatch):
-    monkeypatch.setattr(markets, "available", lambda: markets.available()[:-1])
+    fewer = markets.available()[:-1]
+    monkeypatch.setattr(markets, "available", lambda: fewer)
     assert gen.main(["--check"]) == 1
 
 
