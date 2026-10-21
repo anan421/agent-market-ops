@@ -18,5 +18,5 @@ def available() -> list[str]:
 
 def load(name: str) -> dict:
     if not isinstance(name, str) or not re.fullmatch(r"[a-z_]+", name) or name not in available():
-        raise UnknownMarketError(f"unknown market {name!r}; available: {', '.join(available())}")
+        raise UnknownMarketError(f"未登记的市场：{name}。可选：{', '.join(available())}")
     return json.loads((_DIR / f"{name}.json").read_text(encoding="utf-8"))

@@ -12,5 +12,6 @@
   "has_cashflow": true,
   "periods_per_year": 252,
   "synthetic": true,
-  "example_values": true
+  "example_values": true,
+  "display_name_zh": "美股"
 }

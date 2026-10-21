@@ -12,5 +12,6 @@
   "has_cashflow": false,
   "periods_per_year": 242,
   "synthetic": true,
-  "example_values": true
+  "example_values": true,
+  "display_name_zh": "期货"
 }
