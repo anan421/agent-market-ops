@@ -1,0 +1,16 @@
+{
+  "name": "demo",
+  "asset_class": "equity",
+  "currency": "DEMO",
+  "tz": "UTC",
+  "trading_hours": "09:00-17:00",
+  "calendar_note": "Fictional market for tests",
+  "price_limit_pct": null,
+  "settlement": "T+1",
+  "fee_bps": 0.0,
+  "lot_size": 1,
+  "has_cashflow": true,
+  "periods_per_year": 252,
+  "synthetic": true,
+  "example_values": true
+}

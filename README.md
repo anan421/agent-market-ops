@@ -102,3 +102,11 @@ Install the skill by pointing your agent at `SKILL.md` in this repo (Agent Skill
 ## License
 
 MIT © 2026 anan421 / Vincent Gu — see [LICENSE](LICENSE).
+
+---
+
+## Markets (`markets/`)
+
+One JSON config per market (`cn_a`, `hk`, `us`, `crypto`, `futures`, `fx`, `demo`), loaded with `markets.load(name)`. CI generates its per-market matrix from `markets.available()`.
+
+> **Example values:** `fee_bps` and `price_limit_pct` (and every config carries `example_values: true`) are illustrative round numbers, not real exchange or broker parameters. Non-cash-flow asset classes (`crypto`, `commodity`, `fx`) must set `has_cashflow: false`.

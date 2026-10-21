@@ -1,0 +1,16 @@
+{
+  "name": "cn_a",
+  "asset_class": "equity",
+  "currency": "CNY",
+  "tz": "Asia/Shanghai",
+  "trading_hours": "09:30-11:30,13:00-15:00",
+  "calendar_note": "Exchange holiday calendar; demo only",
+  "price_limit_pct": 10.0,
+  "settlement": "T+1",
+  "fee_bps": 3.0,
+  "lot_size": 100,
+  "has_cashflow": true,
+  "periods_per_year": 242,
+  "synthetic": true,
+  "example_values": true
+}
