@@ -17,10 +17,13 @@ VALID_TYPES = {"original", "reply", "quote", "repost"}
 REQUIRED = ("id", "author", "type", "text", "ts", "likes", "is_primary_source")
 # 市场枚举来自仓库的 markets/ 包（#5），不再写死。
 MARKETS = tuple(_markets.available())
-# markets/*.json 里没有中文名字段，所以保留这张显示用的表；
-# tests 保证它和 markets.available() 完全一致。
-MARKET_NAMES = {"cn_a": "A股", "hk": "港股", "us": "美股", "crypto": "加密",
-                "futures": "期货", "fx": "外汇", "demo": "演示"}
+
+
+def market_display_name(market):
+    """中文名来自 markets/<market>.json 的 display_name_zh。"""
+    return _markets.load(market)["display_name_zh"]
+
+
 CJK_WEIGHT = 3  # 一个汉字信息量约等于 3 个拉丁字符
 _LATIN = re.compile(r"[A-Za-z0-9]")
 _CJK = re.compile(r"[\u4e00-\u9fff]")
@@ -144,7 +147,7 @@ def render(summary):
     for t, r in summary.items():
         by = r.get("bystander_original", 0)
         noise = r["total_posts"] - r["first_hand_posts"] - by
-        tag = f"[{MARKET_NAMES.get(r['market'], r['market'])}]" if r.get("market") else ""
+        tag = f"[{market_display_name(r['market'])}]" if r.get("market") else ""
         line = f"信号：{t}{tag}，{r['first_hand_posts']} 条一手。路人原创：{by} 条，不算一手。噪声：{noise} 条，扔了。信噪比 {r['snr']:.2f}。"
         if r["consensus_noise"]:
             line += f"互动 {r['total_engagement']}，热闹全是转的。共识噪声，别追。"
