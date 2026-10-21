@@ -146,8 +146,19 @@ def test_bad_market_rejected(tmp_path):
 
 
 def test_market_enum_exact():
-    assert m.MARKETS == ("cn_a", "hk", "us", "crypto", "futures", "fx", "demo")
-    assert set(m.MARKET_NAMES) == set(m.MARKETS)
+    import markets
+    assert list(m.MARKETS) == markets.available()
+
+
+def test_market_names_match_markets_available():
+    import markets
+    assert sorted(m.MARKET_NAMES) == markets.available()
+
+
+def test_cli_choices_from_markets():
+    import markets
+    for name in markets.available():
+        assert m.NOTICE in m.main(["--market", name])
 
 
 def test_cli_rejects_chinese_market_name():
