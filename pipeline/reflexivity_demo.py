@@ -86,12 +86,23 @@ def load_market(name: str) -> Dict[str, str]:
     return validate_meta(meta)
 
 
+def _check_date(x, field):
+    if isinstance(x, _dt.datetime) or not isinstance(x, _dt.date):
+        raise ReflexivityDemoError(f"{field} 必须是 datetime.date（不能是 datetime 或字符串）/ {field} must be a date")
+
+
 def validate_meta(meta: Dict[str, str]) -> Dict[str, str]:
+    if not isinstance(meta, dict):
+        raise ReflexivityDemoError("market 字段必须是 dict / market fields must be a dict")
     for f in REQUIRED_FIELDS:
         if not meta.get(f):
             raise ReflexivityDemoError(f"缺少必填字段：{f} / missing required field")
     if meta["market"] not in available_markets():
         raise ReflexivityDemoError(f"未知市场：{meta['market']} / unknown market")
+    cfg = _markets().load(meta["market"])
+    for f in ("currency", "tz"):
+        if meta[f] != _cfg_get(cfg, f):
+            raise ReflexivityDemoError(f"{f} 与 markets/{meta['market']} 配置不符：{meta[f]} != {_cfg_get(cfg, f)} / {f} mismatch")
     return dict(meta)
 
 
@@ -213,6 +224,11 @@ class PriceThresholdThesis:
     registered_on: _dt.date
 
     def __post_init__(self):
+        _check_date(self.deadline, "deadline")
+        _check_date(self.registered_on, "registered_on")
+        t = self.threshold
+        if isinstance(t, bool) or not isinstance(t, (int, float)) or not math.isfinite(t) or t <= 0:
+            raise ReflexivityDemoError("门槛必须是有限的正数（NaN/inf 会让论点永不被证伪）/ threshold must be finite and > 0")
         if self.deadline <= self.registered_on:
             raise ReflexivityDemoError("到期日必须晚于登记日 / deadline must be after registered_on")
 
@@ -227,6 +243,17 @@ class RelativeThesis:
     registered_on: _dt.date
 
     def __post_init__(self):
+        for f in ("start", "end", "registered_on"):
+            _check_date(getattr(self, f), f)
+        if isinstance(self.basket, str) or not isinstance(self.basket, (tuple, list)):
+            raise ReflexivityDemoError("篮子必须是字符串序列 / basket must be a sequence of names")
+        object.__setattr__(self, "basket", tuple(self.basket))
+        if not all(isinstance(x, str) and x for x in self.basket) or not (isinstance(self.benchmark, str) and self.benchmark):
+            raise ReflexivityDemoError("篮子和基准的每个元素都必须是非空字符串 / names must be non-empty strings")
+        if len(set(self.basket)) != len(self.basket):
+            raise ReflexivityDemoError("篮子里有重复 / duplicate names in basket")
+        if self.benchmark in self.basket:
+            raise ReflexivityDemoError("基准不能放进篮子，否则论点永远证伪不了 / benchmark must not be in basket")
         if not self.basket:
             raise ReflexivityDemoError("篮子不能为空 / basket must not be empty")
         if self.start < self.registered_on:

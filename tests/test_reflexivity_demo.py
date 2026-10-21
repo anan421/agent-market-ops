@@ -67,7 +67,7 @@ def test_pending_when_deadline_after_data():
     t = rd.RelativeThesis(("DEMO-BASKET-A",), "DEMO-BENCH", D(10), D(80), D(10))
     assert rd.evaluate(t, d) == rd.PENDING
     # already hit before deadline -> falsified even if deadline is in the future
-    assert rd.evaluate(rd.PriceThresholdThesis("DEMO-IDX", 0.0, D(80), D(10)), d) == rd.FALSIFIED
+    assert rd.evaluate(rd.PriceThresholdThesis("DEMO-IDX", 1e-9, D(80), D(10)), d) == rd.FALSIFIED
 
 
 def test_thesis_immutable():
@@ -110,7 +110,7 @@ def test_causality_no_future_data():
 def test_statuses_never_say_correct():
     d = _data()
     outs = {rd.evaluate(rd.PriceThresholdThesis("DEMO-IDX", x, due, D(1)), d)
-            for x, due in ((0, D(50)), (1e9, D(50)), (1e9, D(99)))}
+            for x, due in ((1e-9, D(50)), (1e9, D(50)), (1e9, D(99)))}
     assert outs == set(rd.STATUSES) == {"falsified", "not_falsified", "pending"}
     for o in outs:
         assert "correct" not in o and "right" not in o
@@ -150,3 +150,54 @@ def test_cli_report_wording(capsys):
     assert "correct" not in out.lower()
     with pytest.raises(SystemExit):
         rd.main(["--market", "rates"])
+
+
+# ---- 梁文峰复审的反例：每条都能让论点躲掉证伪 ----
+DT = dt.date
+
+
+def _rel(**kw):
+    base = dict(basket=("DEMO-A", "DEMO-B"), benchmark="DEMO-BENCH",
+                start=DT(2026, 3, 1), end=DT(2026, 4, 1), registered_on=DT(2026, 2, 1))
+    base.update(kw)
+    return rd.RelativeThesis(**base)
+
+
+@pytest.mark.parametrize("basket,bench", [(("DEMO-BENCH",), "DEMO-BENCH"),
+                                          (("DEMO-A", "DEMO-BENCH"), "DEMO-BENCH"),
+                                          (("DEMO-A", "DEMO-A"), "DEMO-BENCH")])
+def test_benchmark_in_basket_or_duplicates_rejected(basket, bench):
+    with pytest.raises(rd.ReflexivityDemoError):
+        _rel(basket=basket, benchmark=bench)
+
+
+@pytest.mark.parametrize("t", [float("nan"), float("inf"), -1.0, 0.0, True, "100"])
+def test_threshold_must_be_finite_positive(t):
+    with pytest.raises(rd.ReflexivityDemoError, match="门槛"):
+        rd.PriceThresholdThesis("DEMO-A", t, DT(2026, 5, 1), DT(2026, 4, 1))
+
+
+def test_list_basket_frozen_after_registration():
+    b = ["DEMO-A", "DEMO-B"]
+    th = _rel(basket=b)
+    b.append("DEMO-BENCH")
+    assert th.basket == ("DEMO-A", "DEMO-B")
+    with pytest.raises(rd.ReflexivityDemoError):
+        _rel(basket=("DEMO-A", 3))
+    with pytest.raises(rd.ReflexivityDemoError):
+        _rel(basket="DEMO-A")
+
+
+def test_datetime_rejected_in_chinese():
+    with pytest.raises(rd.ReflexivityDemoError, match="datetime.date"):
+        rd.PriceThresholdThesis("DEMO-A", 1.0, dt.datetime(2026, 5, 1), DT(2026, 4, 1))
+    with pytest.raises(rd.ReflexivityDemoError, match="datetime.date"):
+        _rel(registered_on=dt.datetime(2026, 2, 1))
+
+
+@pytest.mark.parametrize("field,bad", [("currency", "XXX"), ("tz", "UTC")])
+def test_market_dict_checked_against_config(field, bad):
+    good = rd.load_market("cn_a")
+    rd.generate_demo_data(market=good, n=20)
+    with pytest.raises(rd.ReflexivityDemoError, match=field):
+        rd.generate_demo_data(market={**good, field: bad}, n=20)
