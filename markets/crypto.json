@@ -1,0 +1,15 @@
+{
+  "name": "crypto",
+  "asset_class": "crypto",
+  "currency": "USDT",
+  "tz": "UTC",
+  "trading_hours": "24/7",
+  "calendar_note": "No holidays; demo only",
+  "price_limit_pct": null,
+  "settlement": "T+0",
+  "fee_bps": 10.0,
+  "lot_size": 1,
+  "has_cashflow": false,
+  "periods_per_year": 365,
+  "synthetic": true
+}

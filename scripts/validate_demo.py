@@ -5,6 +5,7 @@ from pathlib import Path
 import jsonschema
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 def schema(name): return json.loads((ROOT / "schema" / name).read_text(encoding="utf-8"))
 
@@ -20,8 +21,16 @@ def check_bar(b):
         raise ValueError(f"OHLC inconsistent: {b}")
 
 def main() -> int:
+    import os, markets
     errors = 0
+    only = os.environ.get("AMO_MARKET")
+    for name in ([only] if only else markets.available()):
+        try:
+            jsonschema.validate(markets.load(name), schema("market_config.schema.json"))
+        except Exception as e:
+            errors += 1; print("FAIL market", name, e)
     for b in bar_rows(ROOT / "examples/demo/price_bars.csv"):
+        if only and b["market"] != only: continue
         try: check_bar(b)
         except Exception as e: errors += 1; print("FAIL", e)
     for a in json.loads((ROOT / "examples/demo/brief_actions.json").read_text(encoding="utf-8")):

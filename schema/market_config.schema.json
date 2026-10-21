@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarketConfig",
+  "description": "Per-market conventions (illustrative, demo).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "asset_class",
+    "currency",
+    "tz",
+    "trading_hours",
+    "calendar_note",
+    "price_limit_pct",
+    "settlement",
+    "fee_bps",
+    "lot_size",
+    "has_cashflow",
+    "periods_per_year",
+    "synthetic"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z_]+$"
+    },
+    "asset_class": {
+      "enum": [
+        "equity",
+        "crypto",
+        "commodity",
+        "fx"
+      ]
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3,5}$"
+    },
+    "tz": {
+      "type": "string"
+    },
+    "trading_hours": {
+      "type": "string"
+    },
+    "calendar_note": {
+      "type": "string"
+    },
+    "price_limit_pct": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0
+    },
+    "settlement": {
+      "enum": [
+        "T+0",
+        "T+1",
+        "T+2"
+      ]
+    },
+    "fee_bps": {
+      "type": "number",
+      "minimum": 0
+    },
+    "lot_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "has_cashflow": {
+      "type": "boolean"
+    },
+    "periods_per_year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 366
+    },
+    "synthetic": {
+      "const": true
+    }
+  }
+}

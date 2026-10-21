@@ -1,0 +1,15 @@
+{
+  "name": "fx",
+  "asset_class": "fx",
+  "currency": "USD",
+  "tz": "UTC",
+  "trading_hours": "24/5",
+  "calendar_note": "Sun 22:00 UTC - Fri 22:00 UTC; demo only",
+  "price_limit_pct": null,
+  "settlement": "T+0",
+  "fee_bps": 0.2,
+  "lot_size": 1000,
+  "has_cashflow": false,
+  "periods_per_year": 260,
+  "synthetic": true
+}

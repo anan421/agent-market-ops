@@ -1,0 +1,15 @@
+{
+  "name": "us",
+  "asset_class": "equity",
+  "currency": "USD",
+  "tz": "America/New_York",
+  "trading_hours": "09:30-16:00",
+  "calendar_note": "US exchange holidays; demo only",
+  "price_limit_pct": null,
+  "settlement": "T+1",
+  "fee_bps": 1.0,
+  "lot_size": 1,
+  "has_cashflow": true,
+  "periods_per_year": 252,
+  "synthetic": true
+}

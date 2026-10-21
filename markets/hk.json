@@ -1,0 +1,15 @@
+{
+  "name": "hk",
+  "asset_class": "equity",
+  "currency": "HKD",
+  "tz": "Asia/Hong_Kong",
+  "trading_hours": "09:30-12:00,13:00-16:00",
+  "calendar_note": "HK public holidays; demo only",
+  "price_limit_pct": null,
+  "settlement": "T+0",
+  "fee_bps": 5.0,
+  "lot_size": 100,
+  "has_cashflow": true,
+  "periods_per_year": 246,
+  "synthetic": true
+}
