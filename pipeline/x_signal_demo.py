@@ -9,12 +9,16 @@ import json
 import re
 from pathlib import Path
 
+import markets as _markets
+
 NOTICE = "示例数据，不构成建议"
 DEFAULT_MIN_CHARS = 10
 VALID_TYPES = {"original", "reply", "quote", "repost"}
 REQUIRED = ("id", "author", "type", "text", "ts", "likes", "is_primary_source")
-# TODO: #5 合并后改成从 markets/ 读取。
-MARKETS = ("cn_a", "hk", "us", "crypto", "futures", "fx", "demo")
+# 市场枚举来自仓库的 markets/ 包（#5），不再写死。
+MARKETS = tuple(_markets.available())
+# markets/*.json 里没有中文名字段，所以保留这张显示用的表；
+# tests 保证它和 markets.available() 完全一致。
 MARKET_NAMES = {"cn_a": "A股", "hk": "港股", "us": "美股", "crypto": "加密",
                 "futures": "期货", "fx": "外汇", "demo": "演示"}
 CJK_WEIGHT = 3  # 一个汉字信息量约等于 3 个拉丁字符
