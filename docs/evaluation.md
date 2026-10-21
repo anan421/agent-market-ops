@@ -41,14 +41,14 @@ DSR 可理解为"真实 Sharpe 高于纯噪声最好结果"的概率。
 
 ### 每年期数（ppy）
 
-ppy 一律从 `markets/` 配置读取（`markets.load(<market>)["periods_per_year"]`），本模块不保存任何市场列表或 ppy 数值。市场名须为小写，可用值以 `markets.available()` 为准（目前为 `cn_a`, `hk`, `us`, `crypto`, `futures`, `fx`, `demo`）。
+ppy 一律从 `markets/` 配置读取（`markets.load(<market>)["periods_per_year"]`），本模块不保存任何市场列表或 ppy 数值。市场名须为小写，可用值以 `markets.available()` 为准。
 
 未知市场会直接报中文错误「未知市场: …」，不静默回退；配置缺少合法的 `periods_per_year` 同样报错。
 
 ### 年化口径一致（ppy consistency）
 
 - 每条试验记录须带 `market` 字段，由它决定 ppy。
-- 同一组周期型试验必须使用**同一个 ppy**。例如 crypto 与 cn_a（两者 ppy 不同）混在一组时，`estimate_variance` 和 `deflated_sharpe` 会直接报中文错误：年化口径不同，Sharpe 不可比，应按市场分组分别计算。
+- 同一组周期型试验必须使用**同一个 ppy**。例如把两个 ppy 不同的市场的试验混在一组时，`estimate_variance` 和 `deflated_sharpe` 会直接报中文错误：年化口径不同，Sharpe 不可比，应按市场分组分别计算。
 - DSR 中把年化 SR0 换算为每期（SR0/√ppy）时，所用 ppy 必须与这组试验自身年化时所用的 ppy 相同；`deflated_sharpe(..., trials=...)` 会检查这一点，不一致即报错。
 
 ## 3. 通过规则
