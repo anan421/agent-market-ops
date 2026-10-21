@@ -14,7 +14,7 @@ class Company:
     last_q_profit: float   # most recent quarter net profit
     ttm_profit: float      # trailing-twelve-month net profit
     ocf_ttm: float         # trailing operating cash flow
-    market: str = "A"      # A / HK / US / ... 只影响默认PE区间和货币标签
+    market: str = "cn_a"   # cn_a / hk / us (Code schema enum) 只影响默认PE区间和货币标签
 
 
 def normal_profit(c: Company, haircut: float = 0.5) -> float:
@@ -26,16 +26,16 @@ def normal_profit(c: Company, haircut: float = 0.5) -> float:
 
 # 示例参数，不是结论：不同市场的“合理PE”区间。可按自己的判断覆盖。
 MARKETS = {
-    "A": {"currency": "CNY", "pe": (15, 18)},
-    "HK": {"currency": "HKD", "pe": (10, 13)},
-    "US": {"currency": "USD", "pe": (15, 20)},
+    "cn_a": {"currency": "CNY", "pe": (15, 18)},
+    "hk": {"currency": "HKD", "pe": (10, 13)},
+    "us": {"currency": "USD", "pe": (15, 20)},
 }
 
 
 def fair_value_band(c: Company, pe_low: float | None = None, pe_high: float | None = None,
                     haircut: float = 0.5) -> tuple[float, float]:
     """价值 = 正常每股利润 x 合理PE。没给PE就用该市场的示例区间。"""
-    d = MARKETS.get(c.market, MARKETS["A"])["pe"]
+    d = MARKETS.get(c.market, MARKETS["cn_a"])["pe"]
     pe_low = d[0] if pe_low is None else pe_low
     pe_high = d[1] if pe_high is None else pe_high
     eps = normal_profit(c, haircut) / c.shares
@@ -61,7 +61,7 @@ def verdict(c: Company, **kw) -> dict:
     else:
         call = "expensive"
     return {"name": c.name, "market": c.market,
-            "currency": MARKETS.get(c.market, MARKETS["A"])["currency"], "band": (round(lo, 2), round(hi, 2)),
+            "currency": MARKETS.get(c.market, MARKETS["cn_a"])["currency"], "band": (round(lo, 2), round(hi, 2)),
             "premium_to_band_top": round(gap, 3), "cash_quality": round(q, 2),
             "call": call, "note": NOTES[call]}
 
@@ -77,8 +77,8 @@ NOTES = {
 EXAMPLE = [
     Company("DEMO-A (fictional)", price=150, shares=10, last_q_profit=30, ttm_profit=90, ocf_ttm=20),
     Company("DEMO-B (fictional)", price=25, shares=10, last_q_profit=10, ttm_profit=35, ocf_ttm=30),
-    Company("DEMO-HK (fictional)", price=20, shares=10, last_q_profit=10, ttm_profit=36, ocf_ttm=30, market="HK"),
-    Company("DEMO-COIN (fictional, no earnings)", price=50, shares=10, last_q_profit=0, ttm_profit=0, ocf_ttm=0, market="US"),
+    Company("DEMO-HK (fictional)", price=20, shares=10, last_q_profit=10, ttm_profit=36, ocf_ttm=30, market="hk"),
+    Company("DEMO-COIN (fictional, no earnings)", price=50, shares=10, last_q_profit=0, ttm_profit=0, ocf_ttm=0, market="us"),
 ]
 
 if __name__ == "__main__":
