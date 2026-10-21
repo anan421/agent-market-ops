@@ -142,23 +142,24 @@ def run_demo(seed: int = 42, n_strategies: int = 30, n_obs: int = 504, market: s
     rng = np.random.default_rng(seed)
     rets = [rng.normal(0.0, 0.01, n_obs) for _ in range(n_strategies)]
     rets.append(rng.normal(0.0015, 0.01, n_obs))  # 示例：有正漂移的合成策略
+    # 成本只扣一次：试验 Sharpe、V、SR0、t、DSR、报告的 sr_annual 全部用净收益
+    nets = [r - cost for r in rets]
     trials = []
-    for r in rets:
+    for net in nets:
         trials.append({"market": market, "ppy": ppy, "n": n_obs,
-                       "sr_annual": r.mean() / r.std(ddof=1) * math.sqrt(ppy)})
+                       "sr_annual": net.mean() / net.std(ddof=1) * math.sqrt(ppy)})
     trials.append({"kind": "event", "market": market, "n": 12, "sr_annual": 3.0})  # 事件型：计入 N，不计入 V
     N = len(trials)
     V = estimate_variance(trials)
     s0 = sr0_annual(N, V)
     results = []
-    for i, r in enumerate(rets):
-        net = r - cost
+    for i, net in enumerate(nets):
         dsr = deflated_sharpe(net, ppy, s0, trials)
         t = t_stat(net)
         passed = n_obs >= MIN_N_OBS and abs(t) >= 2.4 and net.mean() > 0 and dsr >= DSR_MIN
         results.append({"id": f"SYN-{i:02d}", "sr_annual": trials[i]["sr_annual"],
                         "t": t, "dsr": dsr, "passed": passed})
-    return {"N": N, "V": V, "SR0": s0, "results": results}
+    return {"N": N, "V": V, "SR0": s0, "trials": trials, "results": results}
 
 
 def luck_generator(seed: int = 29, n_strategies: int = 100, n_obs: int = 504,

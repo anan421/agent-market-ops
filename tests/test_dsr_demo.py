@@ -104,3 +104,22 @@ def test_periodic_cannot_be_reclassified_via_ppy():
     with pytest.raises(ValueError, match="未知试验类型"):
         d.trial_ppy({"kind": "evnt", "market": "cn_a", "n": 500, "sr_annual": 1.0})
     assert d.trial_ppy({"market": "cn_a", "ppy": 242, "n": 500, "sr_annual": 1.0}) == 242
+
+
+def test_cost_applied_consistently_to_trials_v_sr0():
+    cost = 0.0005
+    out = d.run_demo(seed=42, cost=cost)
+    rng = np.random.default_rng(42)
+    rets = [rng.normal(0.0, 0.01, 504) for _ in range(30)]
+    rets.append(rng.normal(0.0015, 0.01, 504))
+    nets = [r - cost for r in rets]
+    ppy = d.ppy_for("demo")
+    for i, net in enumerate(nets):
+        sr = net.mean() / net.std(ddof=1) * np.sqrt(ppy)
+        assert out["trials"][i]["sr_annual"] == pytest.approx(sr)
+        assert out["results"][i]["sr_annual"] == pytest.approx(sr)
+        assert out["results"][i]["t"] == pytest.approx(d.t_stat(net))
+    assert out["V"] == pytest.approx(d.estimate_variance(out["trials"]))
+    assert out["SR0"] == pytest.approx(d.sr0_annual(out["N"], out["V"]))
+    gross = d.run_demo(seed=42, cost=0.0)
+    assert all(a["sr_annual"] < b["sr_annual"] for a, b in zip(out["results"], gross["results"]))
