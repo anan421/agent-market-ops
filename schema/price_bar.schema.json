@@ -53,13 +53,14 @@
       "type": "string",
       "enum": [
         "cn_a",
-        "hk",
-        "us",
         "crypto",
+        "demo",
         "futures",
         "fx",
-        "demo"
-      ]
+        "hk",
+        "us"
+      ],
+      "description": "Generated from markets/*.json by scripts/gen_market_enum.py; do not edit by hand"
     },
     "currency": {
       "type": "string",
