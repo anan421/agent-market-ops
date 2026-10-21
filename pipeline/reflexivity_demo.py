@@ -1,8 +1,26 @@
-"""Reflexivity / bias turning-point demo.
+"""Reflexivity / bias turning-point demo  反射性 / 偏差拐点 示例
 
 示例数据，不构成建议。 Synthetic example data only; not investment advice.
+
+给新手的 30 秒解释 / Reflexivity for beginners
+-------------------------------------------
+教科书说：价格反映基本面。反射性说：价格和人们的看法互相推动。
+  1. 价格涨 -> 大家更相信故事（叙事升温）;
+  2. 故事更热 -> 更多人买 -> 价格继续涨;
+  3. 循环自我强化，直到看法和现实差得太远，循环反转（拐点）。
+Textbook view: prices reflect fundamentals. Reflexive view: prices and beliefs
+push each other in a loop that self-reinforces until the gap ("bias") between
+belief and reality gets too wide, then it reverses.
+
+本模块教你三件事 / What this module shows:
+  * 量循环有多强：滚动相关 + 领先滞后（谁先动）/ measure the loop: rolling corr + lead-lag.
+  * 找候选拐点：价格创新高但叙事动量走弱（或反之）/ flag price-narrative divergence.
+  * 事先登记证伪条件：只回答"被证伪/未被证伪"，从不说"我对了"
+    / pre-register how you could be wrong; output is only falsified / not_falsified.
+
 All series (DEMO-IDX, DEMO-BASKET-*, DEMO-BENCH, DEMO-NARRATIVE) are fictional,
-generated from a fixed random seed. Pure stdlib, no network.
+generated from a fixed random seed. Each series carries market/currency/tz fields;
+logic reads the market only from those fields. Pure stdlib, no network.
 """
 from __future__ import annotations
 
@@ -17,8 +35,39 @@ FALSIFIED = "falsified"
 NOT_FALSIFIED = "not_falsified"
 START = _dt.date(2000, 1, 3)
 
+ALLOWED_MARKETS = ("cn_a", "hk", "us", "crypto", "futures", "fx", "demo")
+# Display labels for the report only; the `market` field always holds the enum value.
+MARKET_LABEL_ZH = {"cn_a": "A股", "hk": "港股", "us": "美股", "crypto": "加密",
+                   "futures": "期货", "fx": "外汇", "demo": "演示"}
+# CLI convenience only; logic reads market from each series' fields, never from codes.
+MARKET_PRESETS = {
+    "cn_a": {"market": "cn_a", "currency": "CNY", "tz": "Asia/Shanghai"},
+    "hk": {"market": "hk", "currency": "HKD", "tz": "Asia/Hong_Kong"},
+    "us": {"market": "us", "currency": "USD", "tz": "America/New_York"},
+    "crypto": {"market": "crypto", "currency": "USD", "tz": "UTC"},
+    "futures": {"market": "futures", "currency": "CNY", "tz": "Asia/Shanghai"},
+    "fx": {"market": "fx", "currency": "USD", "tz": "UTC"},
+    "demo": {"market": "demo", "currency": "DEMO", "tz": "UTC"},
+}
+REQUIRED_FIELDS = ("market", "currency", "tz")
 
-def generate_demo_data(seed: int = 42, n: int = 250) -> Dict[str, object]:
+
+def validate_meta(meta: Dict[str, str]) -> Dict[str, str]:
+    for f in REQUIRED_FIELDS:
+        if not meta.get(f):
+            raise ValueError(f"missing required field: {f}")
+    if meta["market"] not in ALLOWED_MARKETS:
+        raise ValueError(f"unknown market: {meta['market']}")
+    return dict(meta)
+
+
+def series_meta(data: Dict[str, object], name: str) -> Dict[str, str]:
+    """Market/currency/tz come only from the series' own fields."""
+    return validate_meta(data["meta"][name])
+
+
+def generate_demo_data(seed: int = 42, n: int = 250, market: Optional[Dict[str, str]] = None,
+                       market_key: Optional[str] = None) -> Dict[str, object]:
     """Synthetic price + narrative with a built-in feedback loop.
 
     Narrative chases past returns; price drift is pushed by narrative (reflexive loop).
@@ -40,8 +89,15 @@ def generate_demo_data(seed: int = 42, n: int = 250) -> Dict[str, object]:
             p.append(p[-1] * (1 + rng.gauss(mu, sd)))
         return p
 
+    if market is None:
+        if market_key is None:
+            raise ValueError("pass market fields (market/currency/tz) or market_key")
+        market = MARKET_PRESETS[market_key]
+    meta = validate_meta(market)
+    names = ["DEMO-IDX", "DEMO-NARRATIVE", "DEMO-BASKET-A", "DEMO-BASKET-B", "DEMO-BENCH"]
     return {
         "disclaimer": DISCLAIMER,
+        "meta": {k: dict(meta) for k in names},
         "dates": dates,
         "DEMO-IDX": idx,
         "DEMO-NARRATIVE": narr,
@@ -123,6 +179,12 @@ def evaluate(thesis, data: Dict[str, object]) -> str:
     """Return only 'falsified' or 'not_falsified'. Never claims the thesis is confirmed."""
     dates = data["dates"]
     if isinstance(thesis, PriceThresholdThesis):
+        series_meta(data, thesis.series)
+    elif isinstance(thesis, RelativeThesis):
+        ms = {series_meta(data, x)["market"] for x in (*thesis.basket, thesis.benchmark)}
+        if len(ms) != 1:
+            raise ValueError("basket and benchmark must share one market (from fields)")
+    if isinstance(thesis, PriceThresholdThesis):
         px = data[thesis.series]
         for d, c in zip(dates, px):
             if d <= thesis.deadline and c >= thesis.threshold:
@@ -137,9 +199,55 @@ def evaluate(thesis, data: Dict[str, object]) -> str:
     raise TypeError("unknown thesis type")
 
 
-if __name__ == "__main__":
-    d = generate_demo_data()
-    print(DISCLAIMER)
+VERDICT_ZH = {FALSIFIED: "被证伪 / falsified", NOT_FALSIFIED: "未被证伪 / not falsified"}
+DIV_WHY = {
+    "price_high_narrative_fading": "价格新高但叙事降温：买的人越来越少相信故事，循环可能见顶 / price new high while belief cools: loop may be topping.",
+    "price_low_narrative_rising": "价格新低但叙事回暖：看法先修复，价格可能跟上 / price new low while belief recovers: loop may be bottoming.",
+}
+
+
+def build_report(d: Dict[str, object]) -> str:
+    m = series_meta(d, "DEMO-IDX")
+    dates = d["dates"]
+    L = [DISCLAIMER, f"市场 market: {m['market']} ({MARKET_LABEL_ZH[m['market']]}) | 货币 currency: {m['currency']} | 时区 tz: {m['tz']}", ""]
     ll = lead_lag(returns(d["DEMO-IDX"]), d["DEMO-NARRATIVE"][1:])
-    print("lead-lag:", {k: round(v, 3) for k, v in ll.items()})
-    print("divergences:", len(divergence_points(d["DEMO-IDX"], d["DEMO-NARRATIVE"])))
+    lag, c = max(ll.items(), key=lambda kv: abs(kv[1]))
+    if lag > 0:
+        why = f"价格领先叙事 {lag} 天：价格先动，大家再去找故事 / price leads narrative by {lag}d: price moves, then the story follows."
+    elif lag < 0:
+        why = f"叙事领先价格 {-lag} 天：大家先相信，价格再跟 / narrative leads price by {-lag}d: belief first, price follows."
+    else:
+        why = "同日最相关：价格和叙事同步 / strongest same-day: moving together."
+    L += [f"[循环强度 loop strength] 峰值 lag={lag:+d}, corr={c:.3f}", "  " + why, ""]
+    L.append("[最近 3 个背离点 latest 3 divergences]")
+    for p in divergence_points(d["DEMO-IDX"], d["DEMO-NARRATIVE"])[-3:]:
+        L.append(f"  {dates[p['t']]} {p['type']}: {DIV_WHY[p['type']]}")
+    px = d["DEMO-IDX"]
+    thr = round(max(px) * 1.05, 2)
+    t1 = PriceThresholdThesis("DEMO-IDX", thr, dates[-1])
+    t2 = RelativeThesis(("DEMO-BASKET-A", "DEMO-BASKET-B"), "DEMO-BENCH", dates[-60], dates[-1])
+    v1, v2 = evaluate(t1, d), evaluate(t2, d)
+    L += ["", "[示例登记论点 example registered theses]",
+          f"  1) 价格阈值 price threshold: 若 DEMO-IDX 收盘 >= {thr} 于 {dates[-1]} 前则错 -> {VERDICT_ZH[v1]}",
+          "     " + ("收盘碰到了阈值，论点错了 / close touched the threshold, thesis is wrong." if v1 == FALSIFIED
+                     else "收盘没碰到阈值，论点暂时活着 / close never touched the threshold, thesis survives for now."),
+          f"  2) 相对 relative: 若等权 DEMO-BASKET-A+B 在 {dates[-60]}~{dates[-1]} 跑赢 DEMO-BENCH 则错 -> {VERDICT_ZH[v2]}",
+          "     " + ("篮子跑赢了基准（未复权收盘），论点错了 / basket beat benchmark, thesis is wrong." if v2 == FALSIFIED
+                     else "篮子没跑赢基准（未复权收盘），论点暂时活着 / basket did not beat benchmark, thesis survives for now."),
+          "", "未被证伪 ≠ 我对了 / not falsified is not proof"]
+    return "\n".join(L)
+
+
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(description=DISCLAIMER)
+    ap.add_argument("--market", choices=list(ALLOWED_MARKETS), required=True)
+    ap.add_argument("--seed", type=int, default=42)
+    a = ap.parse_args(argv)
+    d = generate_demo_data(a.seed, market_key=a.market)
+    print(build_report(d))
+    return d
+
+
+if __name__ == "__main__":
+    main()

@@ -7,18 +7,18 @@ from pipeline import reflexivity_demo as rd
 
 
 def _data():
-    return rd.generate_demo_data(seed=7, n=60)
+    return rd.generate_demo_data(seed=7, n=60, market_key="us")
 
 
 def test_determinism_by_seed():
-    a, b = rd.generate_demo_data(1), rd.generate_demo_data(1)
+    a, b = rd.generate_demo_data(1, market_key="hk"), rd.generate_demo_data(1, market_key="hk")
     assert a["DEMO-IDX"] == b["DEMO-IDX"] and a["DEMO-NARRATIVE"] == b["DEMO-NARRATIVE"]
-    assert rd.generate_demo_data(2)["DEMO-IDX"] != a["DEMO-IDX"]
+    assert rd.generate_demo_data(2, market_key="hk")["DEMO-IDX"] != a["DEMO-IDX"]
     assert "示例数据" in a["disclaimer"]
 
 
 def test_feedback_metrics_and_divergence():
-    d = rd.generate_demo_data()
+    d = rd.generate_demo_data(market_key="crypto")
     r = rd.returns(d["DEMO-IDX"])
     ll = rd.lead_lag(r, d["DEMO-NARRATIVE"][1:], 3)
     assert set(ll) == set(range(-3, 4))
@@ -62,3 +62,42 @@ def test_output_never_says_correct():
     assert outs == {"falsified", "not_falsified"}
     for o in outs:
         assert "correct" not in o and "right" not in o and o != "confirmed"
+
+
+@pytest.mark.parametrize("key", sorted(rd.MARKET_PRESETS))
+def test_all_markets_run(key, capsys):
+    d = rd.main(["--market", key])
+    for name in d["meta"]:
+        m = rd.series_meta(d, name)
+        assert m == rd.MARKET_PRESETS[key]
+    t = rd.PriceThresholdThesis("DEMO-IDX", 1e9, d["dates"][-1])
+    assert rd.evaluate(t, d) == rd.NOT_FALSIFIED
+
+
+def test_market_read_from_fields_not_codes():
+    with pytest.raises(ValueError):
+        rd.generate_demo_data(1)  # no default market
+    with pytest.raises(ValueError):
+        rd.generate_demo_data(1, market={"market": "cn_a", "currency": "CNY"})  # tz missing
+    d = rd.generate_demo_data(1, market={"market": "us", "currency": "USD", "tz": "America/New_York"})
+    d["meta"]["DEMO-BENCH"] = {"market": "hk", "currency": "HKD", "tz": "Asia/Hong_Kong"}
+    t = rd.RelativeThesis(("DEMO-BASKET-A",), "DEMO-BENCH", d["dates"][0], d["dates"][9])
+    with pytest.raises(ValueError):
+        rd.evaluate(t, d)
+
+
+def test_cli_report_wording(capsys):
+    rd.main(["--market", "us", "--seed", "3"])
+    out = capsys.readouterr().out
+    assert "被证伪" in out and "未被证伪 ≠ 我对了" in out
+    assert "market: us (美股)" in out and "America/New_York" in out
+    assert "correct" not in out.lower() and "我是对的" not in out
+
+
+def test_market_enum_exact():
+    assert set(rd.MARKET_PRESETS) == set(rd.ALLOWED_MARKETS) == {"cn_a", "hk", "us", "crypto", "futures", "fx", "demo"}
+    assert rd.MARKET_PRESETS["demo"] == {"market": "demo", "currency": "DEMO", "tz": "UTC"}
+    with pytest.raises(ValueError):
+        rd.validate_meta({"market": "A股", "currency": "CNY", "tz": "Asia/Shanghai"})
+    with pytest.raises(SystemExit):
+        rd.main(["--market", "rates"])
