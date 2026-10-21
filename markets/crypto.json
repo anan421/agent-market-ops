@@ -12,5 +12,6 @@
   "has_cashflow": false,
   "periods_per_year": 365,
   "synthetic": true,
-  "example_values": true
+  "example_values": true,
+  "display_name_zh": "加密"
 }
