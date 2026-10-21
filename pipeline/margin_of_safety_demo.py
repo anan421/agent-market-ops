@@ -32,10 +32,17 @@ MARKETS = {
 }
 
 
+def _market(c: Company) -> dict:
+    """未登记的市场直接报错，不悄悄套用A股参数。无现金流资产(crypto/futures/fx)不该进估值。"""
+    if c.market not in MARKETS:
+        raise ValueError(f"市场 {c.market!r} 没有估值参数；无现金流资产请勿调用本模块")
+    return MARKETS[c.market]
+
+
 def fair_value_band(c: Company, pe_low: float | None = None, pe_high: float | None = None,
                     haircut: float = 0.5) -> tuple[float, float]:
     """价值 = 正常每股利润 x 合理PE。没给PE就用该市场的示例区间。"""
-    d = MARKETS.get(c.market, MARKETS["cn_a"])["pe"]
+    d = _market(c)["pe"]
     pe_low = d[0] if pe_low is None else pe_low
     pe_high = d[1] if pe_high is None else pe_high
     eps = normal_profit(c, haircut) / c.shares
@@ -61,7 +68,7 @@ def verdict(c: Company, **kw) -> dict:
     else:
         call = "expensive"
     return {"name": c.name, "market": c.market,
-            "currency": MARKETS.get(c.market, MARKETS["cn_a"])["currency"], "band": (round(lo, 2), round(hi, 2)),
+            "currency": _market(c)["currency"], "band": (round(lo, 2), round(hi, 2)),
             "premium_to_band_top": round(gap, 3), "cash_quality": round(q, 2),
             "call": call, "note": NOTES[call]}
 
@@ -70,7 +77,7 @@ NOTES = {
     "margin of safety": "市场先生今天报了个低价，而且利润真收到了现金。可以研究，不是命令。",
     "fair, no margin": "价格合理不等于便宜。没有安全边际，就等。",
     "expensive": "好公司也可能是坏买卖。价格是你付出的，价值是你得到的。",
-    "too hard pile": "利润波动太大、亏损或根本没有利润（如加密币、大宗商品）。没有现金流就没有内在价值可算，放进“太难”筐。",
+    "too hard pile": "利润波动太大、亏损或根本没有利润（如亏损股）。没有现金流就没有内在价值可算，放进“太难”筐。",
 }
 
 
@@ -78,7 +85,7 @@ EXAMPLE = [
     Company("DEMO-A (fictional)", price=150, shares=10, last_q_profit=30, ttm_profit=90, ocf_ttm=20),
     Company("DEMO-B (fictional)", price=25, shares=10, last_q_profit=10, ttm_profit=35, ocf_ttm=30),
     Company("DEMO-HK (fictional)", price=20, shares=10, last_q_profit=10, ttm_profit=36, ocf_ttm=30, market="hk"),
-    Company("DEMO-COIN (fictional, no earnings)", price=50, shares=10, last_q_profit=0, ttm_profit=0, ocf_ttm=0, market="us"),
+    Company("DEMO-LOSS (fictional, no earnings)", price=50, shares=10, last_q_profit=0, ttm_profit=0, ocf_ttm=0, market="us"),
 ]
 
 if __name__ == "__main__":

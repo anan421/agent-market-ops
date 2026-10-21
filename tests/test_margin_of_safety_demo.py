@@ -42,4 +42,10 @@ def test_every_call_has_a_note():
 def test_markets_and_no_earnings():
     by = {c.name: verdict(c) for c in EXAMPLE}
     assert by["DEMO-HK (fictional)"]["currency"] == "HKD"
-    assert by["DEMO-COIN (fictional, no earnings)"]["call"] == "too hard pile"
+    assert by["DEMO-LOSS (fictional, no earnings)"]["call"] == "too hard pile"
+
+
+def test_unknown_market_raises():
+    c = Company("x", 1, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30, market="crypto")
+    with pytest.raises(ValueError):
+        verdict(c)
