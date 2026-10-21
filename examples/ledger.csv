@@ -1,0 +1,3 @@
+date,account,action,symbol,qty,pnl_pct,note,synthetic
+2026-10-20,cash,今天不做,,,0.0,flat demo day,true
+2026-10-21,cash,今天不做,,,0.0,flat demo day,true

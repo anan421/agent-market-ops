@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/agent-market-ops/schema/ledger_row.schema.json",
+  "title": "LedgerRow",
+  "description": "One reconcile / paper-trade ledger line (demo schema).",
+  "type": "object",
+  "required": ["date", "account", "action", "pnl_pct"],
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "account": {
+      "type": "string",
+      "enum": ["signal", "view", "cash"],
+      "description": "Paper account label (illustrative)"
+    },
+    "action": {
+      "type": "string",
+      "description": "e.g. 今天不做, buy, sell, hold"
+    },
+    "symbol": {
+      "type": ["string", "null"],
+      "description": "Null on cash / no-trade days"
+    },
+    "qty": {
+      "type": ["number", "null"]
+    },
+    "pnl_pct": {
+      "type": "number",
+      "description": "Day P&L percent for this row (demo)"
+    },
+    "note": {
+      "type": "string"
+    },
+    "synthetic": {
+      "type": "boolean"
+    }
+  }
+}

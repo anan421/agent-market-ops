@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/agent-market-ops/schema/filing.schema.json",
+  "title": "MarketFiling",
+  "description": "A company or regulator notice (demo schema).",
+  "type": "object",
+  "required": ["id", "title", "published_at", "source_id"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "source_id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "url": { "type": ["string", "null"] },
+    "published_at": {
+      "type": "string",
+      "description": "ISO-8601 or YYYY-MM-DD"
+    },
+    "published_at_precision": {
+      "type": "string",
+      "enum": ["datetime", "date", "unknown"]
+    },
+    "ticker": {
+      "type": ["string", "null"],
+      "description": "Optional instrument code (demo placeholders only)"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["earnings", "clarification", "policy", "other"]
+    },
+    "text_excerpt": { "type": "string" },
+    "synthetic": { "type": "boolean" }
+  }
+}

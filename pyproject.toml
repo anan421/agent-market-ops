@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-market-ops"
+version = "0.1.0"
+description = "Schema-first agent-native toolkit for daily market scrape → validate → reconcile loops (demo data only)."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+  { name = "anan421 / Vincent Gu" }
+]
+keywords = ["agents", "market-ops", "reconcile", "schema", "codex", "demo"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "jsonschema>=4.0"]
+
+[project.urls]
+Homepage = "https://github.com/anan421/agent-market-ops"
+Issues = "https://github.com/anan421/agent-market-ops/issues"
+
+[tool.setuptools.packages.find]
+include = ["pipeline*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

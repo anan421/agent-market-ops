@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/agent-market-ops/schema/reconcile_summary.schema.json",
+  "title": "ReconcileSummary",
+  "description": "End-of-day reconcile summary object used to render HTML (demo schema).",
+  "type": "object",
+  "required": ["date", "headline", "accounts", "trades", "disclaimer"],
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "headline": { "type": "string" },
+    "accounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "pnl_pct", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "pnl_pct": { "type": "number" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "trades": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "hit_rate": {
+      "type": ["object", "null"],
+      "properties": {
+        "correct": { "type": "integer", "minimum": 0 },
+        "judgable": { "type": "integer", "minimum": 0 },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "disclaimer": { "type": "string" },
+    "synthetic": { "type": "boolean" }
+  }
+}

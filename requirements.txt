@@ -1,0 +1,4 @@
+# Runtime: stdlib only for demos.
+# Dev / CI:
+pytest>=7.0
+jsonschema>=4.0

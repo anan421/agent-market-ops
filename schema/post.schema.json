@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/agent-market-ops/schema/post.schema.json",
+  "title": "MarketPost",
+  "description": "A single ingested social or news post (demo schema). No live feeds ship with this package.",
+  "type": "object",
+  "required": ["id", "source_id", "collected_at", "text"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable unique id, e.g. demo:post:2026-10-21:001"
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Logical feed id (demo_feed, gov_notice, …)"
+    },
+    "url": {
+      "type": ["string", "null"],
+      "description": "Canonical URL if any"
+    },
+    "published_at": {
+      "type": ["string", "null"],
+      "description": "ISO-8601 timestamp when the post was published"
+    },
+    "collected_at": {
+      "type": "string",
+      "description": "ISO-8601 timestamp when the agent collected it"
+    },
+    "text": {
+      "type": "string",
+      "description": "Plain-text body (truncated for demos)"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["T1", "T2", "T3", "T4", "unknown"],
+      "description": "Source reliability tier (illustrative)"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Free-form topic tags"
+    },
+    "synthetic": {
+      "type": "boolean",
+      "description": "Must be true for any shipped demo row"
+    }
+  }
+}
