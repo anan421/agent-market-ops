@@ -13,7 +13,12 @@ NOTICE = "示例数据，不构成建议"
 DEFAULT_MIN_CHARS = 10
 VALID_TYPES = {"original", "reply", "quote", "repost"}
 REQUIRED = ("id", "author", "type", "text", "ts", "likes")
-_WORD = re.compile(r"[A-Za-z0-9\u4e00-\u9fff]")
+MARKETS = ("cn_a", "hk", "us", "crypto", "futures", "fx", "demo")
+MARKET_NAMES = {"cn_a": "A股", "hk": "港股", "us": "美股", "crypto": "加密",
+                "futures": "期货", "fx": "外汇", "demo": "演示"}
+CJK_WEIGHT = 3  # 一个汉字信息量约等于 3 个拉丁字符
+_LATIN = re.compile(r"[A-Za-z0-9]")
+_CJK = re.compile(r"[\u4e00-\u9fff]")
 
 
 def load_demo(path):
@@ -26,13 +31,23 @@ def load_demo(path):
             raise ValueError(f"post {p.get('id')} missing {missing}")
         if p["type"] not in VALID_TYPES:
             raise ValueError(f"post {p['id']} bad type {p['type']}")
+    for t, spec in data["keywords"].items():
+        if not t.startswith("DEMO-"):
+            raise ValueError(f"ticker {t} must be DEMO-*")
+        if isinstance(spec, dict) and spec.get("market") not in MARKETS:
+            raise ValueError(f"ticker {t} bad market {spec.get('market')}")
     return data
 
 
+def text_weight(text):
+    """有效长度：拉丁字母/数字各算 1，汉字各算 CJK_WEIGHT；emoji、标点不算。"""
+    t = text or ""
+    return len(_LATIN.findall(t)) + CJK_WEIGHT * len(_CJK.findall(t))
+
+
 def is_low_effort(text, min_chars=DEFAULT_MIN_CHARS):
-    """Emoji-only, punctuation-only, or shorter than min_chars meaningful chars."""
-    meaningful = _WORD.findall(text or "")
-    return len(meaningful) < min_chars
+    """中英文通用：有效长度不足 min_chars 即水贴（"wow"=3，"链上冲"=9，"火箭🚀"=6）。"""
+    return text_weight(text) < min_chars
 
 
 def is_first_hand(post, min_chars=DEFAULT_MIN_CHARS):
@@ -42,24 +57,84 @@ def is_first_hand(post, min_chars=DEFAULT_MIN_CHARS):
     return not is_low_effort(post["text"], min_chars)
 
 
+def _words(spec):
+    return spec["words"] if isinstance(spec, dict) else spec
+
+
+def market_of(spec):
+    return spec.get("market") if isinstance(spec, dict) else None
+
+
+def filter_market(keywords, market):
+    if market is None:
+        return keywords
+    if market not in MARKETS:
+        raise ValueError(f"unknown market {market}; choose from {MARKETS}")
+    return {t: v for t, v in keywords.items() if market_of(v) == market}
+
+
 def map_tickers(text, keywords):
     low = (text or "").lower()
-    return sorted(t for t, kws in keywords.items() if any(k.lower() in low for k in kws))
+    return sorted(t for t, spec in keywords.items() if any(k.lower() in low for k in _words(spec)))
 
 
-def summarize(posts, keywords, min_chars=DEFAULT_MIN_CHARS):
-    out = {t: {"first_hand_posts": 0, "engagement": 0} for t in keywords}
+DEFAULT_SNR_THRESHOLD = 0.4
+DEFAULT_HIGH_ENGAGEMENT = 500
+
+
+def summarize(posts, keywords, min_chars=DEFAULT_MIN_CHARS,
+              snr_threshold=DEFAULT_SNR_THRESHOLD, high_engagement=DEFAULT_HIGH_ENGAGEMENT,
+              market=None):
+    """Per ticker: first-hand count/engagement, total related count/engagement, snr, flag.
+
+    snr = first_hand_posts / total_posts (posts of any type mapped to the ticker).
+    consensus_noise = snr < snr_threshold and total_engagement >= high_engagement.
+    """
+    keywords = filter_market(keywords, market)
+    out = {t: {"market": market_of(keywords[t]), "first_hand_posts": 0, "engagement": 0,
+               "total_posts": 0, "total_engagement": 0} for t in keywords}
     for p in posts:
-        if not is_first_hand(p, min_chars):
-            continue
+        fh = is_first_hand(p, min_chars)
         for t in map_tickers(p["text"], keywords):
-            out[t]["first_hand_posts"] += 1
-            out[t]["engagement"] += int(p["likes"])
+            r = out[t]
+            r["total_posts"] += 1
+            r["total_engagement"] += int(p["likes"])
+            if fh:
+                r["first_hand_posts"] += 1
+                r["engagement"] += int(p["likes"])
+    for r in out.values():
+        r["snr"] = round(r["first_hand_posts"] / r["total_posts"], 3) if r["total_posts"] else 0.0
+        r["consensus_noise"] = (r["total_posts"] > 0 and r["snr"] < snr_threshold
+                                and r["total_engagement"] >= high_engagement)
+    return out
+
+
+def render(summary):
+    """中文短句输出。"""
+    lines = [NOTICE + "。"]
+    if not summary:
+        lines.append("这个市场没有示例标的。")
+    for t, r in summary.items():
+        noise = r["total_posts"] - r["first_hand_posts"]
+        tag = f"[{MARKET_NAMES.get(r['market'], r['market'])}]" if r.get("market") else ""
+        line = f"信号：{t}{tag}，{r['first_hand_posts']} 条一手。噪声：{noise} 条，扔了。信噪比 {r['snr']:.2f}。"
+        if r["consensus_noise"]:
+            line += f"互动 {r['total_engagement']}，热闹全是转的。共识噪声，别追。"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(description="x_signal_demo（" + NOTICE + "）")
+    ap.add_argument("--market", choices=MARKETS, help="只看某个市场")
+    ap.add_argument("--data", default=str(Path(__file__).resolve().parent.parent / "data" / "示例数据_x_posts.json"))
+    a = ap.parse_args(argv)
+    d = load_demo(a.data)
+    out = render(summarize(d["posts"], d["keywords"], market=a.market))
+    print(out)
     return out
 
 
 if __name__ == "__main__":
-    src = Path(__file__).resolve().parent.parent / "data" / "示例数据_x_posts.json"
-    d = load_demo(src)
-    print(NOTICE)
-    print(json.dumps(summarize(d["posts"], d["keywords"]), ensure_ascii=False, indent=2))
+    main()

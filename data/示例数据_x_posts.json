@@ -1,13 +1,165 @@
 {
   "_notice": "示例数据，不构成建议。全部帖子、作者与标的均为虚构。",
-  "keywords": {"DEMO-X": ["rocket", "launch", "orbit"], "DEMO-Y": ["battery", "charging", "factory"]},
+  "keywords": {
+    "DEMO-X": {
+      "market": "us",
+      "words": [
+        "rocket",
+        "launch",
+        "orbit",
+        "火箭",
+        "发射"
+      ]
+    },
+    "DEMO-Y": {
+      "market": "cn_a",
+      "words": [
+        "battery",
+        "charging",
+        "factory",
+        "电池",
+        "充电"
+      ]
+    },
+    "DEMO-Z": {
+      "market": "crypto",
+      "words": [
+        "chain",
+        "token bridge",
+        "链上",
+        "跨链"
+      ]
+    }
+  },
   "posts": [
-    {"id": "p1", "author": "demo_user_1", "type": "original", "text": "New rocket launch window confirmed for next week", "ts": "2026-01-05T10:00:00Z", "likes": 120},
-    {"id": "p2", "author": "demo_user_2", "type": "repost", "text": "New rocket launch window confirmed for next week", "ts": "2026-01-05T10:05:00Z", "likes": 30},
-    {"id": "p3", "author": "demo_user_1", "type": "quote", "text": "Battery factory output doubled this quarter, per the demo report", "ts": "2026-01-05T11:00:00Z", "likes": 80},
-    {"id": "p4", "author": "demo_user_3", "type": "reply", "text": "🔥🔥", "ts": "2026-01-05T11:10:00Z", "likes": 5},
-    {"id": "p5", "author": "demo_user_2", "type": "quote", "text": "wow", "ts": "2026-01-05T12:00:00Z", "likes": 9},
-    {"id": "p6", "author": "demo_user_3", "type": "original", "text": "Charging network expands to orbit-themed demo city", "ts": "2026-01-05T13:00:00Z", "likes": 40},
-    {"id": "p7", "author": "demo_user_4", "type": "original", "text": "Weather looks nice today in the sample town", "ts": "2026-01-05T14:00:00Z", "likes": 15}
+    {
+      "id": "p1",
+      "author": "demo_user_1",
+      "type": "original",
+      "text": "New rocket launch window confirmed for next week",
+      "ts": "2026-01-05T10:00:00Z",
+      "likes": 120
+    },
+    {
+      "id": "p2",
+      "author": "demo_user_2",
+      "type": "repost",
+      "text": "New rocket launch window confirmed for next week",
+      "ts": "2026-01-05T10:05:00Z",
+      "likes": 30
+    },
+    {
+      "id": "p3",
+      "author": "demo_user_1",
+      "type": "quote",
+      "text": "Battery factory output doubled this quarter, per the demo report",
+      "ts": "2026-01-05T11:00:00Z",
+      "likes": 80
+    },
+    {
+      "id": "p4",
+      "author": "demo_user_3",
+      "type": "reply",
+      "text": "🔥🔥",
+      "ts": "2026-01-05T11:10:00Z",
+      "likes": 5
+    },
+    {
+      "id": "p5",
+      "author": "demo_user_2",
+      "type": "quote",
+      "text": "wow",
+      "ts": "2026-01-05T12:00:00Z",
+      "likes": 9
+    },
+    {
+      "id": "p6",
+      "author": "demo_user_3",
+      "type": "original",
+      "text": "Charging network expands to orbit-themed demo city",
+      "ts": "2026-01-05T13:00:00Z",
+      "likes": 40
+    },
+    {
+      "id": "p7",
+      "author": "demo_user_4",
+      "type": "original",
+      "text": "Weather looks nice today in the sample town",
+      "ts": "2026-01-05T14:00:00Z",
+      "likes": 15
+    },
+    {
+      "id": "p8",
+      "author": "demo_user_5",
+      "type": "repost",
+      "text": "Battery factory output doubled this quarter, per the demo report",
+      "ts": "2026-01-05T15:00:00Z",
+      "likes": 300
+    },
+    {
+      "id": "p9",
+      "author": "demo_user_6",
+      "type": "repost",
+      "text": "Battery factory output doubled this quarter, per the demo report",
+      "ts": "2026-01-05T15:10:00Z",
+      "likes": 250
+    },
+    {
+      "id": "p10",
+      "author": "demo_user_7",
+      "type": "reply",
+      "text": "battery to the moon",
+      "ts": "2026-01-05T15:20:00Z",
+      "likes": 200
+    },
+    {
+      "id": "p11",
+      "author": "demo_user_8",
+      "type": "quote",
+      "text": "battery!!",
+      "ts": "2026-01-05T15:30:00Z",
+      "likes": 150
+    },
+    {
+      "id": "p12",
+      "author": "demo_user_9",
+      "type": "original",
+      "text": "示例项目链上活跃地址本周翻倍，跨链桥上线测试网",
+      "ts": "2026-01-06T09:00:00Z",
+      "likes": 60
+    },
+    {
+      "id": "p13",
+      "author": "demo_user_10",
+      "type": "reply",
+      "text": "链上冲！",
+      "ts": "2026-01-06T09:05:00Z",
+      "likes": 12
+    },
+    {
+      "id": "p14",
+      "author": "demo_user_11",
+      "type": "quote",
+      "text": "火箭🚀",
+      "ts": "2026-01-06T09:10:00Z",
+      "likes": 7
+    },
+    {
+      "id": "p15",
+      "author": "demo_user_12",
+      "type": "original",
+      "text": "New chain upgrade notes published for the demo network",
+      "ts": "2026-01-06T10:00:00Z",
+      "likes": 25
+    }
+  ],
+  "markets_allowed": [
+    "cn_a",
+    "hk",
+    "us",
+    "crypto",
+    "futures",
+    "fx",
+    "demo"
   ]
 }
