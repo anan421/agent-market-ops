@@ -150,9 +150,14 @@ def test_market_enum_exact():
     assert list(m.MARKETS) == markets.available()
 
 
-def test_market_names_match_markets_available():
+def test_display_name_comes_from_config(demo):
     import markets
-    assert sorted(m.MARKET_NAMES) == markets.available()
+    s = m.summarize(demo["posts"], demo["keywords"])
+    out = m.render(s)
+    for t, r in s.items():
+        zh = markets.load(r["market"])["display_name_zh"]
+        assert m.market_display_name(r["market"]) == zh
+        assert f"{t}[{zh}]" in out
 
 
 def test_cli_choices_from_markets():
