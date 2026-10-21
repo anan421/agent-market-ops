@@ -17,7 +17,8 @@
     "lot_size",
     "has_cashflow",
     "periods_per_year",
-    "synthetic"
+    "synthetic",
+    "example_values"
   ],
   "properties": {
     "name": {
@@ -50,7 +51,8 @@
         "number",
         "null"
       ],
-      "exclusiveMinimum": 0
+      "exclusiveMinimum": 0,
+      "description": "Example value only; null = no daily limit modelled"
     },
     "settlement": {
       "enum": [
@@ -61,7 +63,8 @@
     },
     "fee_bps": {
       "type": "number",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Example value only (illustrative round-number cost)"
     },
     "lot_size": {
       "type": "integer",
@@ -77,6 +80,35 @@
     },
     "synthetic": {
       "const": true
+    },
+    "example_values": {
+      "const": true,
+      "description": "fee_bps and price_limit_pct are illustrative example values, not real exchange parameters"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "asset_class": {
+            "enum": [
+              "crypto",
+              "commodity",
+              "fx"
+            ]
+          }
+        },
+        "required": [
+          "asset_class"
+        ]
+      },
+      "then": {
+        "properties": {
+          "has_cashflow": {
+            "const": false
+          }
+        }
+      }
+    }
+  ]
 }

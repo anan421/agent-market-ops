@@ -43,3 +43,42 @@ def test_bad_config_rejected():
 def test_path_traversal_rejected(bad):
     with pytest.raises(markets.UnknownMarketError):
         markets.load(bad)
+
+
+def test_cashflow_constraint():
+    s = S("market_config.schema.json")
+    for ac in ("crypto", "commodity", "fx"):
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate({**markets.load("us"), "asset_class": ac, "has_cashflow": True}, s)
+    jsonschema.validate({**markets.load("us"), "asset_class": "equity", "has_cashflow": True}, s)
+    assert markets.load("fx")["asset_class"] == "fx"
+    d = markets.load("demo")
+    assert d["asset_class"] == "equity" and d["has_cashflow"] is True
+
+
+@pytest.mark.parametrize("name", TARGET)
+def test_example_values_flagged(name):
+    assert markets.load(name)["example_values"] is True
+
+
+def test_every_market_has_demo_bars():
+    from scripts import validate_demo as vd
+    seen = {b["market"] for b in vd.bar_rows(ROOT / "examples/demo/price_bars.csv")}
+    assert seen == set(markets.available())
+
+
+def test_currency_tz_mismatch_rejected():
+    from scripts import validate_demo as vd
+    bar = {"symbol": "DEMO1", "market": "cn_a", "currency": "USD", "tz": "UTC", "date": "2026-10-19",
+           "open": 1.0, "high": 2.0, "low": 0.5, "close": 1.5, "volume": 1, "synthetic": True}
+    with pytest.raises(ValueError, match="currency"):
+        vd.check_bar(bar)
+    vd.check_bar({**bar, "currency": "CNY", "tz": "Asia/Shanghai"})
+
+
+def test_zero_rows_fails(monkeypatch, tmp_path):
+    from scripts import validate_demo as vd
+    monkeypatch.delenv("AMO_MARKET", raising=False)
+    real = vd.bar_rows
+    monkeypatch.setattr(vd, "bar_rows", lambda p: (b for b in real(p) if b["market"] != "hk"))
+    assert vd.main() == 1

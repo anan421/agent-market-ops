@@ -9,7 +9,8 @@
   "settlement": "T+1",
   "fee_bps": 0.0,
   "lot_size": 1,
-  "has_cashflow": false,
+  "has_cashflow": true,
   "periods_per_year": 252,
-  "synthetic": true
+  "synthetic": true,
+  "example_values": true
 }

@@ -27,11 +27,24 @@ jobs:
       - name: Pytest
         run: pytest -q
 
+  markets:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.gen.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - id: gen
+        run: echo "matrix=$(python -c 'import json, markets; print(json.dumps(markets.available()))')" >> "$GITHUB_OUTPUT"
+
   per-market:
+    needs: markets
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        market: [cn_a, hk, us, crypto, futures, fx, demo]
+        market: ${{ fromJSON(needs.markets.outputs.matrix) }}
     env:
       AMO_MARKET: ${{ matrix.market }}
     steps:

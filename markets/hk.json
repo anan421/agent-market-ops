@@ -11,5 +11,6 @@
   "lot_size": 100,
   "has_cashflow": true,
   "periods_per_year": 246,
-  "synthetic": true
+  "synthetic": true,
+  "example_values": true
 }
