@@ -37,3 +37,9 @@ def test_bad_config_rejected():
     cfg = {k: v for k, v in markets.load("us").items() if k != "settlement"}
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(cfg, S("market_config.schema.json"))
+
+
+@pytest.mark.parametrize("bad", ["../schema/price_bar.schema", "us/../hk", "", "US"])
+def test_path_traversal_rejected(bad):
+    with pytest.raises(markets.UnknownMarketError):
+        markets.load(bad)
