@@ -36,3 +36,18 @@ def test_enum_is_generated_and_current():
 def test_check_detects_drift(monkeypatch):
     monkeypatch.setattr(markets, "available", lambda: ["cn_a", "us"])
     assert gen.main(["--check"]) == 1
+
+
+ZH = {"cn_a": "A股", "hk": "港股", "us": "美股", "crypto": "加密", "futures": "期货", "fx": "外汇", "demo": "示例"}
+
+
+@pytest.mark.parametrize("name", sorted(ZH))
+def test_display_name_zh(name):
+    assert markets.load(name)["display_name_zh"] == ZH[name]
+
+
+def test_display_name_zh_required():
+    s = json.loads((ROOT / "schema/market_config.schema.json").read_text(encoding="utf-8"))
+    cfg = {k: v for k, v in markets.load("us").items() if k != "display_name_zh"}
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(cfg, s)

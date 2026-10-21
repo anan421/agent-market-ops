@@ -18,7 +18,8 @@
     "has_cashflow",
     "periods_per_year",
     "synthetic",
-    "example_values"
+    "example_values",
+    "display_name_zh"
   ],
   "properties": {
     "name": {
@@ -84,6 +85,11 @@
     "example_values": {
       "const": true,
       "description": "fee_bps and price_limit_pct are illustrative example values, not real exchange parameters"
+    },
+    "display_name_zh": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Chinese display name, e.g. A股 / 港股"
     }
   },
   "allOf": [
