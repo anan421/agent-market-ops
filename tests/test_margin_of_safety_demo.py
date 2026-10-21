@@ -94,3 +94,16 @@ def test_no_cashflow_market_rejected():
 def test_demo_market_runs():
     r = verdict(Company("x", 25, 10, last_q_profit=10, ttm_profit=35, ocf_ttm=30, market="demo"))
     assert r["call"] == "margin of safety"
+
+
+def test_swing_boundary_exactly_two_is_valued():
+    # 比值正好 2 倍仍估值，略超过 2 倍进太难筐；两个方向都测
+    assert verdict(Company("x", 1, 10, last_q_profit=20, ttm_profit=40, ocf_ttm=40))["call"] != "too hard pile"  # 80/40
+    assert verdict(Company("x", 1, 10, last_q_profit=5, ttm_profit=40, ocf_ttm=40))["call"] != "too hard pile"   # 年化 20 vs TTM 40
+    assert verdict(Company("x", 1, 10, last_q_profit=20.1, ttm_profit=40, ocf_ttm=40))["call"] == "too hard pile"
+    assert verdict(Company("x", 1, 10, last_q_profit=4.9, ttm_profit=40, ocf_ttm=40))["call"] == "too hard pile"
+
+
+def test_zero_shares_loss_maker_reports_shares_error():
+    with pytest.raises(ValueError, match="股本"):
+        verdict(Company("x", 10, 0, last_q_profit=-5, ttm_profit=-20, ocf_ttm=0))
