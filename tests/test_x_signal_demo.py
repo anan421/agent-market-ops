@@ -211,3 +211,13 @@ def test_word_boundary_english():
 def test_chinese_substring_kept():
     kw = {"DEMO-Y": {"market": "cn_a", "words": ["电池"]}}
     assert m.map_tickers("固态电池产线", kw) == ["DEMO-Y"]
+
+
+def test_market_display_name_all_markets():
+    import re
+    import markets
+    for name in markets.available():
+        zh = m.market_display_name(name)
+        assert zh, name
+        assert re.search(r"[\u4e00-\u9fff]", zh), name
+        assert zh == markets.load(name)["display_name_zh"]
