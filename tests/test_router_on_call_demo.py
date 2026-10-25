@@ -53,6 +53,7 @@ def test_html_parses_and_carries_sample_day():
     assert ">9<" in text
     assert text.count(">0<") >= 1
     assert "2026-10-23" in text
+    assert "11:50" in text
     assert "Grok" not in text and "GrokBot" not in text
     assert "sk-" not in text
 

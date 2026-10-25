@@ -25,7 +25,7 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; }
     body {
-      font-family: "Segoe UI", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+      font-family: "Segoe UI", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
       background: radial-gradient(1200px 600px at 50% -10%, #dce7f5, var(--bg));
       color: var(--ink);
       padding: 28px 20px 40px;
@@ -150,10 +150,10 @@
     .bar.ignore { background: linear-gradient(180deg, #e2e8f0, #94a3b8); }
     @keyframes grow { from { transform: scaleY(0.2); transform-origin: bottom; } to { transform: scaleY(1); } }
     .funnel { font-size: 12px; color: var(--muted); margin-top: 8px; }
-    .log { max-height: 132px; overflow: auto; }
+    .log { max-height: 148px; overflow: auto; }
     .log-row {
       display: grid; grid-template-columns: 48px 64px 1fr; gap: 8px;
-      padding: 6px 8px; margin-bottom: 6px; font-size: 12px;
+      padding: 6px 8px; margin-bottom: 6px; font-size: 12px; color: var(--ink);
     }
     .tag-ignored { color: var(--ignore); }
     .tag-handled { color: var(--ok); }
@@ -265,7 +265,17 @@
         </div>
         <div class="panel">
           <h3>LOG</h3>
-          <div class="log" id="log"></div>
+          <div class="log" id="log">
+            <div class="log-row"><span>11:50</span><span class="tag-ignored">ignored</span><span>X预窗口 · 闲聊预热，无行动项</span></div>
+            <div class="log-row"><span>11:19</span><span class="tag-ignored">ignored</span><span>公告 · 例行提示，无需跟进</span></div>
+            <div class="log-row"><span>11:16</span><span class="tag-handled">handled</span><span>证伪 · TRIAGE 记入观察窗</span></div>
+            <div class="log-row"><span>11:13</span><span class="tag-ignored">ignored</span><span>GitHub · bot ping，无状态变化</span></div>
+            <div class="log-row"><span>10:41</span><span class="tag-ignored">ignored</span><span>X预窗口 · 重复转发</span></div>
+            <div class="log-row"><span>10:12</span><span class="tag-handled">handled</span><span>公告 · FIXER 核对公开摘要</span></div>
+            <div class="log-row"><span>09:58</span><span class="tag-ignored">ignored</span><span>证伪 · 窗口未到期</span></div>
+            <div class="log-row"><span>09:33</span><span class="tag-handled">handled</span><span>GitHub · REVIEWER 看讨论线程</span></div>
+            <div class="log-row"><span>09:05</span><span class="tag-ignored">ignored</span><span>X预窗口 · 表情包噪声</span></div>
+          </div>
         </div>
         <div class="panel">
           <h3>YOU / 审批门</h3>
@@ -303,13 +313,14 @@
     ];
 
     const logEl = document.getElementById("log");
-    LOGS.forEach(function (row, i) {
-      const div = document.createElement("div");
-      div.className = "log-row";
-      div.style.animation = "grow 0.4s ease " + (i * 0.08) + "s both";
-      div.innerHTML = "<span>" + row[0] + "</span><span class='tag-" + row[1] + "'>" + row[1] + "</span><span>" + row[2] + "</span>";
-      logEl.appendChild(div);
-    });
+    if (logEl && logEl.children.length === 0) {
+      LOGS.forEach(function (row) {
+        const div = document.createElement("div");
+        div.className = "log-row";
+        div.innerHTML = "<span>" + row[0] + "</span><span class='tag-" + row[1] + "'>" + row[1] + "</span><span>" + row[2] + "</span>";
+        logEl.appendChild(div);
+      });
+    }
 
     const canvas = document.getElementById("flow");
     const stage = document.getElementById("stage");
