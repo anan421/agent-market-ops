@@ -62,6 +62,7 @@ agent-market-ops/
 ├── schema/                  # JSON Schema (draft 2020-12)
 ├── pipeline/                # demo Python modules (no network)
 ├── examples/                # sample brief, ledger.csv, reconcile HTML
+│   └── router-on-call/      # A-share on-call router dashboard (synthetic sample day)
 ├── tests/                   # pytest
 ├── CONTRIBUTING.md          # Codex-oriented PR workflow
 └── SECURITY.md

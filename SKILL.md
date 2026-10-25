@@ -60,7 +60,7 @@ falsifier JSON; treat hooks as documentation for your own tracker.
 |---|---|
 | `schema/` | public JSON schemas |
 | `pipeline/` | demo Python modules |
-| `examples/` | sample brief, ledger CSV, reconcile HTML |
+| `examples/` | sample brief, ledger CSV, reconcile HTML, router-on-call demo |
 | `tests/` | pytest |
 | `CONTRIBUTING.md` | Codex-oriented PR workflow |
 
