@@ -24,6 +24,7 @@ dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "jsonschema>=4.0"]
+formal = ["hypothesis>=6.100"]
 
 [project.urls]
 Homepage = "https://github.com/anan421/agent-market-ops"
