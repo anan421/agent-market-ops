@@ -102,28 +102,24 @@ def test_price_threshold_rejects_deadline_not_after_registration(
         PriceThresholdThesis("DEMO-IDX", threshold, _d(due), _d(reg))
 
 
-@given(
-    start=day_offsets,
-    end=day_offsets,
-    reg=day_offsets,
-)
+@given(data=st.data())
 @settings(max_examples=150, deadline=None)
-def test_relative_rejects_window_before_registration(
-    start: int, end: int, reg: int
-) -> None:
-    assume(start < reg)
-    assume(end > start)
+def test_relative_rejects_window_before_registration(data) -> None:
+    # Build (start < reg, end > start) without discard-heavy assumes.
+    reg = data.draw(st.integers(min_value=1, max_value=400))
+    start = data.draw(st.integers(min_value=0, max_value=reg - 1))
+    end = data.draw(st.integers(min_value=start + 1, max_value=400))
     with pytest.raises(ReflexivityDemoError, match="登记日"):
         RelativeThesis(("DEMO-BASKET-A",), "DEMO-BENCH", _d(start), _d(end), _d(reg))
 
 
-@given(start=day_offsets, end=day_offsets, reg=day_offsets)
+@given(data=st.data())
 @settings(max_examples=150, deadline=None)
-def test_relative_rejects_end_not_after_start(
-    start: int, end: int, reg: int
-) -> None:
-    assume(start >= reg)
-    assume(end <= start)
+def test_relative_rejects_end_not_after_start(data) -> None:
+    # Build (start >= reg, end <= start) without discard-heavy assumes.
+    start = data.draw(st.integers(min_value=0, max_value=400))
+    reg = data.draw(st.integers(min_value=0, max_value=start))
+    end = data.draw(st.integers(min_value=0, max_value=start))
     with pytest.raises(ReflexivityDemoError, match="窗口终点"):
         RelativeThesis(("DEMO-BASKET-A",), "DEMO-BENCH", _d(start), _d(end), _d(reg))
 
