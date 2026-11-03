@@ -23,7 +23,7 @@ classifiers = [
 dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "jsonschema>=4.0"]
+dev = ["pytest>=7.0", "jsonschema>=4.0", "hypothesis>=6.100"]
 formal = ["hypothesis>=6.100"]
 
 [project.urls]
